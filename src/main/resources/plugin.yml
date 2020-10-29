@@ -1,0 +1,13 @@
+name: RankedPvP
+main: dev.tonysp.rankedpvp.RankedPvP
+version: ${project.version}
+website: https://tonysp.dev/
+authors: [Tonysp]
+description: ${project.description}
+depend: [WorldEdit,WorldGuard,PluginData]
+softdepend: [PlaceholderAPI]
+api-version: 1.16
+
+commands:
+  pvp:
+    description: Main command

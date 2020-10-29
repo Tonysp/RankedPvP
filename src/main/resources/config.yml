@@ -1,0 +1,133 @@
+master: true
+
+spawn: "125,25,123,20.5,15.1,world"
+
+accept-sound: "UI_BUTTON_CLICK"
+
+table-prefix: "rankedpvp_"
+
+event-settings:
+  1v1:
+    backup-inventory: true
+    start-commands:
+      - "give kit %PLAYER%"
+
+arenas:
+  first-arena:
+    name: "Arena One"
+    event-type: 1v1
+    ranked: true
+    region: regionName
+    lobby-door-blocks:
+      - "125,25,123,world,acacia_log"
+    team-one-warps:
+      - "125,25,123,world"
+      - "125,25,123,world"
+    team-two-warps:
+      - "125,25,123,20.5,15.1,world"
+      - "125,25,123,20.5,15.1,world"
+
+ranks:
+  enabled: true
+  unrakned:
+    name: "{#736F6E}Unranked"
+    games-required-to-lose-this-rank: 10
+  rank0:
+    name: "{#B6B6B4}Iron I"
+    rating: "0-699"
+  rank1:
+    name: "{#B6B6B4}Iron II"
+    rating: "700-799"
+  rank2:
+    name: "{#B6B6B4}Iron III"
+    rating: "800-899"
+  rank3:
+    name: "{#CD7F32}Bronze I"
+    rating: "900-949"
+  rank4:
+    name: "{#CD7F32}Bronze II"
+    rating: "950-999"
+  rank5:
+    name: "{#CD7F32}Bronze III"
+    rating: "1000-1049"
+  rank6:
+    name: "{#C0C0C0}Silver I"
+    rating: "1050-1099"
+  rank7:
+    name: "{#C0C0C0}Silver II"
+    rating: "1100-1149"
+  rank8:
+    name: "{#C0C0C0}Silver III"
+    rating: "1150-1199"
+  rank9:
+    name: "{#FDD017}Gold I"
+    rating: "1200-1249"
+  rank10:
+    name: "{#FDD017}Gold II"
+    rating: "1250-1299"
+  rank11:
+    name: "{#FDD017}Gold III"
+    rating: "1300-1349"
+  rank12:
+    name: "{#E5E4E2}Platinum I"
+    rating: "1350-1399"
+  rank13:
+    name: "{#E5E4E2}Platinum II"
+    rating: "1400-1449"
+  rank14:
+    name: "{#E5E4E2}Platinum III"
+    rating: "1450-1499"
+  rank15:
+    name: "{#4EE2EC}Diamond I"
+    rating: "1500-1549"
+  rank16:
+    name: "{#4EE2EC}Diamond II"
+    rating: "1550-1574"
+  rank17:
+    name: "{#4EE2EC}Diamond III"
+    rating: "1575-1599"
+  rank18:
+    name: "{#F62217}Master"
+    rating: "1600-99999"
+
+
+messages:
+  prefix: "{#625D5D}[{#2554C7}RankedPvP{#625D5D}]&r "
+  win-message: "{#E5E4E2}You win!"
+  lose-message: "{#E5E4E2}You lose!"
+  draw-message: "{#E5E4E2}Draw!"
+  win-message-change: "{#E5E4E2}You win! Your rank increased: %OLD% -> %NEW%"
+  lose-message-change: "{#E5E4E2}You lose! Your rank decreased: %OLD% -> %NEW%"
+  draw-message-change: "{#E5E4E2}Draw! Your rank changed: %OLD% -> %NEW%"
+  announce-not-draw: "%WINNER% defeated %LOSER% in ranked 1v1 arena."
+  announce-draw: "%WINNER% drew with %LOSER% in ranked 1v1 arena."
+  rank: "&7[&6%RANK%&7]&r"
+  not-part-of-game: "{#E5E4E2}You are not participating in any match right now!"
+  accepted: "{#E5E4E2}Match accepted. You will be teleported shortly."
+  not-in-queue: "{#E5E4E2}You are not in a queue."
+  left-queue: "{#E5E4E2}You have left the queue."
+  already-waiting: "{#E5E4E2}You are already queued for this type of match. Wait for the opponent,\nor leave the queue with /pvp leave %EVENT%"
+  cooldown: "{#E5E4E2}You need to wait %TIME%."
+  wait-for-opponent: "{#E5E4E2}Succesfully queued! Please wait for a match."
+  did-not-accept: "{#E5E4E2}You failed to accept the match."
+  opponent-did-not-accept: "{#E5E4E2}Your opponent failed to accept."
+  battle-started: "{#E5E4E2}The match has begun!"
+  battle-starting-in: "{#E5E4E2}The match will begin in %TIME%."
+  time-remaining: "{#E5E4E2}%TIME% remaining to the end of the match!"
+  battle-cancelled: "{#E5E4E2}The match was cancelled."
+  click-to-teleport: "{#E5E4E2}Accept the match by clicking on this message. %TIME%"
+  opponent-not-in-arena: "{#E5E4E2}The opponent is not in the arena, the match will end in %TIME%."
+  rating-diff-positive: "&2 (+%AMOUNT%)"
+  rating-diff-negative: "&4 (-%AMOUNT%)"
+  one-player: "player"
+  two-to-four-players: "players"
+  five-or-more-players: "players"
+  one-second: "second"
+  two-to-four-seconds: "seconds"
+  five-or-more-seconds: "seconds"
+  one-minute: "minute"
+  two-to-four-minutes: "minutes"
+  five-or-more-minutes: "minutes"
+  one-remaining: "remaining"
+  two-to-four-remaining: "remaining"
+  five-or-more-remaining: "remaining"
