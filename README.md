@@ -2,7 +2,7 @@
     <img src="rankedpvplogotext.png" alt="Ranked PvP" width="400" /> 
 </h1>
 
-Arena minigame plugin for Minecraft servers.
+1v1 arena minigame plugin for Minecraft servers.
 
 * Advanced matchmaking system ensuring fair matches
 * Works on top of the most advanced ranking system ([TrueSkill](https://trueskill.org/))
