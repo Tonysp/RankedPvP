@@ -1,21 +1,23 @@
 package dev.tonysp.rankedpvp.game;
 
+import dev.tonysp.rankedpvp.players.ArenaPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public enum EventType {
     ONE_VS_ONE,
     ;
 
+    private Map<ArenaPlayer, Integer> cooldowns = new HashMap<>();
+
+    private int cooldown = 0;
     private boolean backupInventory = false;
     private List<String> startCommands = new ArrayList<>();
 
-    public static void loadSettings (FileConfiguration config) {
+    public static void loadFromConfig (FileConfiguration config) {
         ConfigurationSection eventSettings = config.getConfigurationSection("event-settings");
         if (eventSettings == null)
             return;
@@ -25,8 +27,10 @@ public enum EventType {
             if (!eventType.isPresent())
                 continue;
 
-            eventType.get().backupInventory = config.getBoolean("event-settings." + eventTypeString + ".backup-inventory", false);
-            eventType.get().startCommands = config.getStringList("event-settings." + eventTypeString + ".start-commands");
+            String keyPrefix = "event-settings." + eventTypeString + ".";
+            eventType.get().cooldown = config.getInt(keyPrefix + "cooldown", 0);
+            eventType.get().backupInventory = config.getBoolean(keyPrefix + "backup-inventory", false);
+            eventType.get().startCommands = config.getStringList(keyPrefix + "start-commands");
         }
     }
 
@@ -55,5 +59,21 @@ public enum EventType {
 
     public boolean isBackupInventory () {
         return backupInventory;
+    }
+
+    public void decrementCooldowns () {
+        cooldowns.entrySet().forEach(entry -> entry.setValue(entry.getValue() - 1));
+    }
+
+    public boolean isOnCooldown (ArenaPlayer player) {
+        return cooldowns.containsKey(player) && cooldowns.get(player) > 0;
+    }
+
+    public int getCooldown (ArenaPlayer player) {
+        return cooldowns.get(player);
+    }
+
+    public void applyCooldown (ArenaPlayer player) {
+        cooldowns.put(player, cooldown);
     }
 }

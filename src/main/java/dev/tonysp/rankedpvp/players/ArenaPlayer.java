@@ -18,15 +18,18 @@ public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWi
     private transient ItemStack[] inventoryBackup, arenaInventoryBackup;
     private int timeInQueue = 0;
     private final List<MatchResult> matchHistory = new ArrayList<>();
+    private double visibleRatingCoefficient = 1;
 
     public ArenaPlayer (String name) {
         super();
         this.name = name;
+        recalculateVisibleRatingCoefficient();
     }
 
     public ArenaPlayer (String name, double rating, double deviation) {
         super(rating, deviation);
         this.name = name;
+        recalculateVisibleRatingCoefficient();
     }
 
     public String getName () {
@@ -41,19 +44,23 @@ public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWi
         return PlayerManager.getInstance().getPlayerRating(getRatingVisible(), getMatches());
     }
 
-    @Override
-    public int getRatingVisible () {
+    public void recalculateVisibleRatingCoefficient () {
         if (matchHistory.size() == 0) {
-            return getRatingRound();
+            return;
         }
         double averageQuality = matchHistory.stream().mapToDouble(MatchResult::calculateMatchQuality).sum() / matchHistory.size();
         double coefficient = Math.pow(averageQuality, 2.0) * (6.0 + 2.0/3.0);
         if (coefficient > 1) {
             coefficient = 1;
         }
-        //RankedPvP.log(name + " amq: " + averageQuality + ", coeff: " + coefficient + ", total: " + (int) (getRating() * coefficient) + ", size: " + matchHistory.size());
 
-        return (int) (getRating() * coefficient);
+        //RankedPvP.log(name + " amq: " + averageQuality + ", coeff: " + coefficient + ", total: " + (int) (getRating() * coefficient) + ", size: " + matchHistory.size());
+        visibleRatingCoefficient = coefficient;
+    }
+
+    @Override
+    public int getRatingVisible () {
+        return (int) (getRating() * visibleRatingCoefficient);
     }
 
     public void backupInventory () {
@@ -117,6 +124,8 @@ public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWi
         } else {
             losses ++;
         }
+
+        recalculateVisibleRatingCoefficient();
     }
 
     public String getNameWithRatingAndChange (double change) {

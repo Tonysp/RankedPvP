@@ -36,10 +36,10 @@ public class RankedPvP extends JavaPlugin {
         Database.getInstance().initializeTables();
 
         Messages.loadFromConfig(getConfig());
-        EventType.loadSettings(getConfig());
-        ArenaManager.initialize(getInstance(), getConfig());
-        PlayerManager.initialize(getInstance());
-        GameManager.initialize(getInstance());
+        EventType.loadFromConfig(getConfig());
+        ArenaManager.getInstance();
+        PlayerManager.getInstance();
+        GameManager.getInstance();
 
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         new PlayerCommandPreprocessListener();

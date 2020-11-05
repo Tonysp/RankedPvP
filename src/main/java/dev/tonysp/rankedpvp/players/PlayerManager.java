@@ -10,6 +10,7 @@ import dev.tonysp.rankedpvp.data.Action;
 import dev.tonysp.rankedpvp.data.DataPacket;
 import dev.tonysp.rankedpvp.data.DataPacketProcessor;
 import dev.tonysp.rankedpvp.data.Database;
+import dev.tonysp.rankedpvp.game.EventType;
 import dev.tonysp.rankedpvp.game.GameManager;
 import dev.tonysp.rankedpvp.game.TwoPlayerGame;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -36,38 +37,44 @@ public class PlayerManager implements Listener {
 
     private Map<Integer, ArenaPlayer> playersById = new HashMap<>();
     private Map<String, ArenaPlayer> players = new HashMap<>();
-    private Map<ArenaPlayer, Integer> cooldowns = new HashMap<>();
     private Map<String, Warp> playersToWarp = new HashMap<>();
+    private TreeSet<ArenaPlayer> topPlayersCache = new TreeSet<>();
 
     private boolean ranksEnabled = false;
     private TreeMap<Integer, Rank> ranks = new TreeMap<>();
 
-    private final int COOLDOWN = 0;
     private Sound ACCEPT_MESSAGE_SOUND = null;
 
     public static PlayerManager getInstance () {
+        if (instance == null) {
+            instance = new PlayerManager();
+        }
         return instance;
     }
 
-    public static void initialize (RankedPvP plugin) {
-        instance = new PlayerManager();
-        instance.loadRanks(plugin.getConfig());
-        plugin.getServer().getPluginManager().registerEvents(instance, plugin);
+    private PlayerManager () {
+        RankedPvP plugin = RankedPvP.getInstance();
+        loadRanks(plugin.getConfig());
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
 
         try {
-            instance.ACCEPT_MESSAGE_SOUND = Sound.valueOf(plugin.getConfig().getString("accept-sound"));
+            ACCEPT_MESSAGE_SOUND = Sound.valueOf(plugin.getConfig().getString("accept-sound"));
         } catch (Exception ignored) {}
 
         if (RankedPvP.IS_MASTER) {
-            instance.players = Database.getInstance().loadPlayers();
-            for (ArenaPlayer arenaPlayer : instance.players.values()) {
-                instance.playersById.put(arenaPlayer.getId(), arenaPlayer);
+            players = Database.getInstance().loadPlayers();
+            for (ArenaPlayer arenaPlayer : players.values()) {
+                playersById.put(arenaPlayer.getId(), arenaPlayer);
             }
         }
 
         Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
-            instance.cooldowns.entrySet().forEach(e -> e.setValue(e.getValue() - 1));
-        }, 1200L, 1200L);
+            for (EventType eventType : EventType.values()) {
+                eventType.decrementCooldowns();
+            }
+        }, 0, 1200);
+
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, this::refreshTopPlayers, 0, 1200);
     }
 
     public void loadRanks (FileConfiguration config) {
@@ -243,8 +250,8 @@ public class PlayerManager implements Listener {
 
     public void processData (DataPacket data) {
         ArenaPlayer arenaPlayer = data.getPlayer();
-        instance.playersById.put(arenaPlayer.getId(), arenaPlayer);
-        instance.players.put(arenaPlayer.getName().toLowerCase(), arenaPlayer);
+        playersById.put(arenaPlayer.getId(), arenaPlayer);
+        players.put(arenaPlayer.getName().toLowerCase(), arenaPlayer);
     }
 
     private ArenaPlayer createPlayer (String name) {
@@ -276,11 +283,15 @@ public class PlayerManager implements Listener {
     }
 
     public TreeSet<ArenaPlayer> getTopPlayers () {
-        TreeSet<ArenaPlayer> set = new TreeSet<>(players.values());
+        return topPlayersCache;
+    }
+
+    private void refreshTopPlayers () {
+        topPlayersCache = new TreeSet<>(players.values());
         if (ranksEnabled() && Rank.UNRANKED != null) {
-            set.removeIf(player -> player.getMatches() < Rank.GAMES_TO_LOSE_UNRANKED);
+            topPlayersCache.removeIf(player -> player.getMatches() < Rank.GAMES_TO_LOSE_UNRANKED);
         }
-        return (TreeSet<ArenaPlayer>)set.descendingSet();
+        topPlayersCache = (TreeSet<ArenaPlayer>)topPlayersCache.descendingSet();
     }
 
     public Optional<ArenaPlayer> getPlayerByRank (int rank) {
@@ -298,18 +309,6 @@ public class PlayerManager implements Listener {
         } else {
             return Optional.empty();
         }
-    }
-
-    public boolean isOnCooldown (ArenaPlayer player) {
-        return cooldowns.containsKey(player) && cooldowns.get(player) > 0;
-    }
-
-    public int getCooldown (ArenaPlayer player) {
-        return cooldowns.get(player);
-    }
-
-    public void applyCooldown (ArenaPlayer player) {
-        cooldowns.put(player, COOLDOWN);
     }
 
     public void addPlayerToWarp (String playerName, Warp warp) {

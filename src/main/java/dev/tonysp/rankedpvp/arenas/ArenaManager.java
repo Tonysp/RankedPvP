@@ -1,6 +1,5 @@
 package dev.tonysp.rankedpvp.arenas;
 
-import dev.tonysp.plugindata.data.packets.BasicDataPacket;
 import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.Utils;
 import dev.tonysp.rankedpvp.data.Action;
@@ -23,11 +22,15 @@ public class ArenaManager {
 
 
     public static ArenaManager getInstance () {
+        if (instance == null) {
+            instance = new ArenaManager();
+        }
         return instance;
     }
 
-    public static void initialize (RankedPvP plugin, ConfigurationSection config) {
-        instance = new ArenaManager();
+    private ArenaManager () {
+        RankedPvP plugin = RankedPvP.getInstance();
+        ConfigurationSection config = plugin.getConfig();
 
         if (!RankedPvP.IS_MASTER) {
             return;
@@ -35,12 +38,21 @@ public class ArenaManager {
 
         // Load arenas from config
         RankedPvP.log("Loading arenas:");
-        if (config.getConfigurationSection("arenas") != null)
-        for (String arenaName : config.getConfigurationSection("arenas").getKeys(false)) {
+        ConfigurationSection arenasConfig = config.getConfigurationSection("arenas");
+        if (arenasConfig != null)
+        for (String arenaName : arenasConfig.getKeys(false)) {
             RankedPvP.log("... loading arena " + arenaName);
             ConfigurationSection arenaConfig = config.getConfigurationSection("arenas." + arenaName);
-
-            Optional<EventType> eventType = EventType.fromString(arenaConfig.getString("event-type", ""));
+            if (arenaConfig == null) {
+                RankedPvP.logWarning("error while loading arena: invalid arena config");
+                continue;
+            }
+            String eventTypeString = arenaConfig.getString("event-type", "");
+            if (eventTypeString == null) {
+                RankedPvP.logWarning("error while loading arena: invalid event type");
+                continue;
+            }
+            Optional<EventType> eventType = EventType.fromString(eventTypeString);
             if (!eventType.isPresent()) {
                 RankedPvP.logWarning("error while loading arena: invalid event type");
                 continue;
@@ -90,7 +102,7 @@ public class ArenaManager {
 
             Arena arena = new Arena(name, eventType.get(), teamOneWarps, teamTwoWarps, regionName, isRanked);
             arena.lobbyDoorBlocks = lobbyDoorBlocks;
-            instance.arenas.add(arena);
+            arenas.add(arena);
         }
     }
 

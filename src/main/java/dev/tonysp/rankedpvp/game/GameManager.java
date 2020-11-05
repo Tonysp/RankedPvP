@@ -5,7 +5,6 @@ import de.gesundkrank.jskills.Player;
 import de.gesundkrank.jskills.Rating;
 import de.gesundkrank.jskills.Team;
 import de.gesundkrank.jskills.trueskill.TwoPlayerTrueSkillCalculator;
-import dev.tonysp.plugindata.data.DataPacketManager;
 import dev.tonysp.rankedpvp.Messages;
 import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.Utils;
@@ -31,7 +30,6 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
-import java.text.DecimalFormat;
 import java.util.*;
 
 public class GameManager implements Listener {
@@ -51,26 +49,29 @@ public class GameManager implements Listener {
     private Warp spawn;
 
     public static GameManager getInstance () {
+        if (instance == null) {
+            instance = new GameManager();
+        }
         return instance;
     }
 
-    public static void initialize (RankedPvP plugin) {
-        instance = new GameManager();
-        plugin.getServer().getPluginManager().registerEvents(instance, plugin);
-        instance.playerQueue = new HashMap<>();
-        instance.checkQueue = new HashMap<>();
-        instance.games = new ArrayList<>();
-        instance.waitingForAccept = new HashMap<>();
-        instance.inProgress = new HashMap<>();
+    private GameManager () {
+        RankedPvP plugin = RankedPvP.getInstance();
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
+        playerQueue = new HashMap<>();
+        checkQueue = new HashMap<>();
+        games = new ArrayList<>();
+        waitingForAccept = new HashMap<>();
+        inProgress = new HashMap<>();
         for (EventType eventType : EventType.values()) {
-            instance.playerQueue.put(eventType, new LinkedList<>());
+            playerQueue.put(eventType, new LinkedList<>());
         }
 
         Optional<Location> location = Utils.teleportLocationFromString(plugin.getConfig().getString("spawn"));
         location.ifPresent(value -> {
-            instance.spawn = Warp.fromLocation(value);
+            spawn = Warp.fromLocation(value);
             if (RankedPvP.IS_MASTER) {
-                instance.spawn.server = DataPacketProcessor.getInstance().getServerId();
+                spawn.server = DataPacketProcessor.getInstance().getServerId();
             }
         });
 
@@ -88,10 +89,10 @@ public class GameManager implements Listener {
             }
         }
 
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> instance.checkQueue(), 20L, 20L);
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, this::checkQueue, 20L, 20L);
         Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
-            instance.games.removeIf(Game::isCancelled);
-            for (Game game : instance.games) {
+            games.removeIf(Game::isCancelled);
+            for (Game game : games) {
                 game.tick();
             }
         }, 5L, 5L);
@@ -169,8 +170,8 @@ public class GameManager implements Listener {
         Team team1 = new Team(player1, new Rating(player1.getId().getRating(), player1.getId().getDeviation()));
         Team team2 = new Team(player2, new Rating(player2.getId().getRating(), player2.getId().getDeviation()));
 
-        PlayerManager.getInstance().applyCooldown(player1.getId());
-        PlayerManager.getInstance().applyCooldown(player2.getId());
+        EventType.ONE_VS_ONE.applyCooldown(player1.getId());
+        EventType.ONE_VS_ONE.applyCooldown(player2.getId());
 
         double player1OldRatingDouble = player1.getId().getRating();
         double player2OldRatingDouble = player2.getId().getRating();
@@ -415,9 +416,8 @@ public class GameManager implements Listener {
             return;
         }
 
-
-        if (PlayerManager.getInstance().isOnCooldown(arenaPlayer)) {
-            Messages.COOLDOWN.sendTo(arenaPlayer.getName(), "%TIME%:" + Utils.minutesString(PlayerManager.getInstance().getCooldown(arenaPlayer)));
+        if (eventType.isOnCooldown(arenaPlayer)) {
+            Messages.COOLDOWN.sendTo(arenaPlayer.getName(), "%TIME%:" + Utils.minutesString(eventType.getCooldown(arenaPlayer)));
             return;
         }
 
