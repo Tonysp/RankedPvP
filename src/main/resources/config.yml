@@ -19,7 +19,8 @@ table-prefix: "rankedpvp_"
 event-settings:
   1v1:
     cooldown: 0
-    backup-inventory: true
+    backup-inventory: false
+    backup-status-effects: false
     start-commands:
       - "give kit %PLAYER%"
 

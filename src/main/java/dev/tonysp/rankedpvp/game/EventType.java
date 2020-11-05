@@ -15,6 +15,7 @@ public enum EventType {
 
     private int cooldown = 0;
     private boolean backupInventory = false;
+    private boolean backupStatusEffects = false;
     private List<String> startCommands = new ArrayList<>();
 
     public static void loadFromConfig (FileConfiguration config) {
@@ -30,6 +31,7 @@ public enum EventType {
             String keyPrefix = "event-settings." + eventTypeString + ".";
             eventType.get().cooldown = config.getInt(keyPrefix + "cooldown", 0);
             eventType.get().backupInventory = config.getBoolean(keyPrefix + "backup-inventory", false);
+            eventType.get().backupStatusEffects = config.getBoolean(keyPrefix + "backup-status-effects", false);
             eventType.get().startCommands = config.getStringList(keyPrefix + "start-commands");
         }
     }
@@ -59,6 +61,10 @@ public enum EventType {
 
     public boolean isBackupInventory () {
         return backupInventory;
+    }
+
+    public boolean isBackupStatusEffects () {
+        return backupStatusEffects;
     }
 
     public void decrementCooldowns () {

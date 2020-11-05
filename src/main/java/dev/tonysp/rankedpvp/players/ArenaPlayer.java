@@ -4,18 +4,24 @@ import dev.tonysp.rankedpvp.Messages;
 import dev.tonysp.rankedpvp.game.MatchResult;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWithRating>, Serializable {
 
     private String name;
     private transient ItemStack[] inventoryBackup, arenaInventoryBackup;
+    private transient Collection<PotionEffect> statusEffectBackup, arenaStatusEffectBackup;
     private int timeInQueue = 0;
     private final List<MatchResult> matchHistory = new ArrayList<>();
     private double visibleRatingCoefficient = 1;
@@ -63,44 +69,67 @@ public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWi
         return (int) (getRating() * visibleRatingCoefficient);
     }
 
-    public void backupInventory () {
+    public void backupInventory (boolean arena) {
         Player player = Bukkit.getPlayer(getName());
         if (player == null || !player.isOnline())
             return;
 
-        inventoryBackup = player.getInventory().getContents();
+        if (arena) {
+            arenaInventoryBackup = player.getInventory().getContents();
+        } else {
+            inventoryBackup = player.getInventory().getContents();
+        }
         player.getInventory().clear();
     }
 
-    public void restoreInventory () {
+    public void backupStatusEffects (boolean arena) {
         Player player = Bukkit.getPlayer(getName());
         if (player == null || !player.isOnline())
             return;
 
-        player.setHealth(20);
-        if (inventoryBackup != null) {
+        if (arena) {
+            arenaStatusEffectBackup = player.getActivePotionEffects();
+            arenaStatusEffectBackup.forEach(potionEffect -> player.removePotionEffect(potionEffect.getType()));
+        } else {
+            statusEffectBackup = player.getActivePotionEffects();
+            statusEffectBackup.forEach(potionEffect -> player.removePotionEffect(potionEffect.getType()));
+        }
+    }
+
+    public void restoreInventory (boolean arena) {
+        Player player = Bukkit.getPlayer(getName());
+        if (player == null || !player.isOnline())
+            return;
+
+        if (arena && arenaInventoryBackup != null) {
+            player.getInventory().clear();
+            player.getInventory().setContents(arenaInventoryBackup);
+            arenaInventoryBackup = null;
+        } else if (!arena && inventoryBackup != null) {
             player.getInventory().clear();
             player.getInventory().setContents(inventoryBackup);
             inventoryBackup = null;
         }
     }
 
-    public void backupArenaEquip () {
+    public void restoreStatusEffects (boolean arena) {
         Player player = Bukkit.getPlayer(getName());
         if (player == null || !player.isOnline())
             return;
 
-        arenaInventoryBackup = player.getInventory().getContents();
-        player.getInventory().clear();
-    }
-
-    public void restoreArenaEquip () {
-        Player player = Bukkit.getPlayer(getName());
-        if (player == null || !player.isOnline())
-            return;
-
-        player.getInventory().clear();
-        player.getInventory().setContents(arenaInventoryBackup);
+        if (arena && arenaStatusEffectBackup != null) {
+            for (PotionEffectType potionEffectType : PotionEffectType.values()) {
+                player.removePotionEffect(potionEffectType);
+            }
+            player.addPotionEffects(arenaStatusEffectBackup);
+            arenaStatusEffectBackup = null;
+        } else if (!arena && statusEffectBackup != null) {
+            for (PotionEffectType potionEffectType : PotionEffectType.values()) {
+                player.removePotionEffect(potionEffectType);
+            }
+            player.addPotionEffects(statusEffectBackup);
+            statusEffectBackup = null;
+        }
     }
 
     public void incrementTimeInQueue () {
@@ -149,6 +178,15 @@ public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWi
         }
 
         return getNameWithRating() + message.getMessage().replaceAll("%AMOUNT%", changeString) + ChatColor.RESET;
+    }
+
+    public void heal () {
+        Player player = Bukkit.getPlayer(getName());
+        if (player == null)
+            return;
+        AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        if (attribute != null)
+            player.setHealth(attribute.getDefaultValue());
     }
 }
 

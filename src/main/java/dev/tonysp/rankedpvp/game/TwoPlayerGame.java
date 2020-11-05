@@ -69,8 +69,12 @@ public class TwoPlayerGame extends Game {
             if (firstInArena && secondInArena) {
                 if (timeToStart == timeToStartFull) {
                     if (getArena().eventType.isBackupInventory()) {
-                        playerOne.backupInventory();
-                        playerTwo.backupInventory();
+                        playerOne.backupInventory(false);
+                        playerTwo.backupInventory(false);
+                    }
+                    if (getArena().eventType.isBackupStatusEffects()) {
+                        playerOne.backupStatusEffects(false);
+                        playerTwo.backupStatusEffects(false);
                     }
 
                     arena.eventType.runStartCommands(playerOne.getName());
@@ -201,15 +205,8 @@ public class TwoPlayerGame extends Game {
             return;
         }
 
-        AttributeInstance attribute;
-        attribute = bukkitPlayerOne.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-        if (attribute != null)
-            bukkitPlayerOne.setHealth(attribute.getDefaultValue());
-
-        attribute = bukkitPlayerTwo.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-        if (attribute != null)
-            bukkitPlayerTwo.setHealth(attribute.getDefaultValue());
-
+        playerOne.heal();
+        playerTwo.heal();
 
         gameState = GameState.IN_PROGRESS;
         arena.openEntrance();
@@ -220,8 +217,18 @@ public class TwoPlayerGame extends Game {
         GameManager.getInstance().getInProgress().remove(playerOne);
         GameManager.getInstance().getInProgress().remove(playerTwo);
 
-        playerOne.restoreInventory();
-        playerTwo.restoreInventory();
+        playerOne.heal();
+        playerTwo.heal();
+
+        if (getArena().eventType.isBackupInventory()) {
+            playerOne.restoreInventory(false);
+            playerTwo.restoreInventory(false);
+        }
+        if (getArena().eventType.isBackupStatusEffects()) {
+            playerOne.restoreStatusEffects(false);
+            playerTwo.restoreStatusEffects(false);
+        }
+
 
         if (oneBackLocation != null) {
             oneBackLocation.warpPlayer(playerOne.getName(), true);

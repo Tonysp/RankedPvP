@@ -339,8 +339,12 @@ public class PlayerManager implements Listener {
 
             TwoPlayerGame game = (TwoPlayerGame) GameManager.getInstance().getInProgress().get(player.get());
             if (game.getArena().eventType.isBackupInventory()) {
-                player.get().backupInventory();
-                player.get().restoreArenaEquip();
+                player.get().backupInventory(false);
+                player.get().restoreInventory(true);
+            }
+            if (game.getArena().eventType.isBackupStatusEffects()) {
+                player.get().backupStatusEffects(false);
+                player.get().restoreStatusEffects(true);
             }
             if (!game.getArena().isInArena(player.get())) {
                 if (game.playerOne.equals(player.get())) {
@@ -358,8 +362,15 @@ public class PlayerManager implements Listener {
         if (!player.isPresent() || !GameManager.getInstance().getInProgress().containsKey(player.get()))
             return;
 
-        player.get().backupArenaEquip();
-        player.get().restoreInventory();
+        EventType eventType = GameManager.getInstance().getInProgress().get(player.get()).getArena().eventType;
+        if (eventType.isBackupInventory()) {
+            player.get().backupInventory(true);
+            player.get().restoreInventory(false);
+        }
+        if (eventType.isBackupStatusEffects()) {
+            player.get().backupStatusEffects(true);
+            player.get().restoreStatusEffects(false);
+        }
         GameManager.getInstance().getSpawn().warpPlayer(player.get().getName(), false);
     }
 }
