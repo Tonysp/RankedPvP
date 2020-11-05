@@ -1,8 +1,6 @@
 # RankedPvP
 Minecraft Ranked PvP arena plugin.
 
-Required library: [PluginData](https://github.com/Tonysp/PluginData/releases/latest)
-
 ## Features
 * Advanced matchmaking system ensuring fair matches
 * Works on top of the most advanced ranking system ([TrueSkill](https://trueskill.org/))
