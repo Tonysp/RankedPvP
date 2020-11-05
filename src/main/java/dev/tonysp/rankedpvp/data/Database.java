@@ -80,7 +80,7 @@ public class Database {
     }
 
     public void initializeTables(){
-        TABLE_PREFIX = RankedPvP.getInstance().getConfig().getString("table-prefix", "rankedpvp_");
+        TABLE_PREFIX = RankedPvP.getInstance().getConfig().getString("mysql.table-prefix", "rankedpvp_");
         try (Connection connection = getConnection()) {
             PreparedStatement sql = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `" + TABLE_PREFIX + "players` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT,`name` varchar(16) NOT NULL,`rating` double NOT NULL,`deviation` double NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;");
             sql.executeUpdate();

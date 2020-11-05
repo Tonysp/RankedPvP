@@ -1,5 +1,7 @@
+# Enable this if you want to run this plugin across multiple server instances. Redis is required. (https://redis.io/)
 cross-server-settings:
   enabled: false
+  # Only one server should be master. All the arenas must be on the master server.
   master: true
   redis-ip: "127.0.0.1"
   redis-port: 6379
@@ -9,18 +11,21 @@ mysql:
   url: jdbc:mysql://localhost:3306/database
   username: username
   password: 'password'
+  table-prefix: "rankedpvp_"
 
 spawn: "125,25,123,20.5,15.1,world"
 
 accept-sound: "UI_BUTTON_CLICK"
 
-table-prefix: "rankedpvp_"
-
 event-settings:
   1v1:
+    # Cooldown in minutes before a player can play again.
     cooldown: 0
+    # If the plugin should backup and clear player's inventory.
     backup-inventory: false
+    # If the plugin should backup and clear player's potion effects.
     backup-status-effects: false
+    # Commands executed after the participants teleport to the arena.
     start-commands:
       - "give kit %PLAYER%"
 
@@ -30,8 +35,10 @@ arenas:
     event-type: 1v1
     ranked: true
     region: regionName
+    # These blocks will be temporarily removed when the event starts, to release the players.
     lobby-door-blocks:
       - "125,25,123,world,acacia_log"
+    # Multiple warps can be configured per team, one will be picked at random.
     team-one-warps:
       - "125,25,123,world"
       - "125,25,123,world"
@@ -39,6 +46,7 @@ arenas:
       - "125,25,123,20.5,15.1,world"
       - "125,25,123,20.5,15.1,world"
 
+# If ranks are disabled, the plugin will instead show Elo rating. (https://en.wikipedia.org/wiki/Elo_rating_system)
 ranks:
   enabled: true
   unrakned:
