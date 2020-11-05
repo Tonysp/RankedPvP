@@ -5,6 +5,7 @@ import dev.tonysp.plugindata.data.DataPacketManager;
 import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.data.Action;
 import dev.tonysp.rankedpvp.data.DataPacket;
+import dev.tonysp.rankedpvp.data.DataPacketProcessor;
 import dev.tonysp.rankedpvp.players.PlayerManager;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -31,7 +32,11 @@ public class Warp implements Serializable, Comparable<Warp> {
     }
 
     public boolean isOnLocalServer () {
-        return this.server.equalsIgnoreCase(DataPacketManager.getInstance().SERVER_ID);
+        if (DataPacketProcessor.getInstance().isCrossServerEnabled()) {
+            return this.server.equalsIgnoreCase(DataPacketProcessor.getInstance().getServerId());
+        } else {
+            return true;
+        }
     }
 
     public void warpPlayer (String playerName, boolean share) {
@@ -51,8 +56,7 @@ public class Warp implements Serializable, Comparable<Warp> {
 
                 player.teleport(location.get(), PlayerTeleportEvent.TeleportCause.PLUGIN);
             } else {
-                if (share) {
-                    RankedPvP.log("SENDING WARP_PLAYER 0");
+                if (share && DataPacketProcessor.getInstance().isCrossServerEnabled()) {
                     DataPacket.newBuilder()
                             .action(Action.WARP_PLAYER)
                             .warp(this)
@@ -65,7 +69,6 @@ public class Warp implements Serializable, Comparable<Warp> {
             }
         } else {
             if (share) {
-                RankedPvP.log("SENDING WARP_PLAYER 1");
                 DataPacket.newBuilder()
                         .action(Action.WARP_PLAYER)
                         .addReceiver(server)
@@ -81,15 +84,19 @@ public class Warp implements Serializable, Comparable<Warp> {
         }
     }
 
-    public static Warp fromLocation (Location location) {
+    public static Warp fromLocation (Location location) throws IllegalArgumentException {
         Warp warp = new Warp();
-        warp.world = location.getWorld().getName();
+        if (location.getWorld() != null) {
+            warp.world = location.getWorld().getName();
+        } else {
+            throw new IllegalArgumentException("World " + warp.world + " does not exist!");
+        }
         warp.x = location.getX();
         warp.y = location.getY();
         warp.z = location.getZ();
         warp.yaw = location.getYaw();
         warp.pitch = location.getPitch();
-        warp.server = DataPacketManager.getInstance().SERVER_ID;
+        warp.server = DataPacketProcessor.getInstance().getServerId();
         return warp;
     }
 

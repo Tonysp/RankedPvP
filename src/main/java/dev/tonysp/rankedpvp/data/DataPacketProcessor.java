@@ -1,5 +1,9 @@
 package dev.tonysp.rankedpvp.data;
 
+import dev.tonysp.plugindata.PluginData;
+import dev.tonysp.plugindata.connections.ConnectionsManager;
+import dev.tonysp.plugindata.connections.redis.RedisConnection;
+import dev.tonysp.plugindata.data.DataPacketManager;
 import dev.tonysp.plugindata.data.events.DataPacketReceiveEvent;
 import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.arenas.ArenaManager;
@@ -9,31 +13,91 @@ import dev.tonysp.rankedpvp.game.GameManager;
 import dev.tonysp.rankedpvp.game.TwoPlayerGame;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
 import dev.tonysp.rankedpvp.players.PlayerManager;
+import dev.tonysp.rankedpvp.players.Rank;
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.Configuration;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+
+import java.util.UUID;
 
 public class DataPacketProcessor implements Listener {
 
     private static DataPacketProcessor instance;
 
-    private DataPacketProcessor () {
-        RankedPvP.getInstance().getServer().getPluginManager().registerEvents(this, RankedPvP.getInstance());
-
-        DataPacket.newBuilder()
-                .action(Action.SERVER_ONLINE)
-                .boolean1(true)
-                .boolean2(RankedPvP.IS_MASTER)
-                .buildPacket()
-                .send();
-    }
+    private boolean crossServerEnabled = false;
+    private RedisConnection redisConnection;
+    private DataPacketManager dataPacketManager;
+    private String serverId = "";
 
     public static DataPacketProcessor getInstance() {
         if (instance == null) {
             instance = new DataPacketProcessor();
         }
         return instance;
+    }
+
+    private DataPacketProcessor () {
+        FileConfiguration config = RankedPvP.getInstance().getConfig();
+        if (!config.getBoolean("cross-server-settings.enabled", false)) {
+            return;
+        }
+        RankedPvP.IS_MASTER = config.getBoolean("cross-server-settings.master", false);
+
+        // Initialize Redis connection
+        String ip, password;
+        int port;
+        ip = config.getString("cross-server-settings.redis-ip", "127.0.0.1");
+        port = config.getInt("cross-server-settings.redis-port", 6379);
+        password = config.getString("cross-server-settings.redis-password", "");
+        String connectionName = "RankedPvP-plugin-redis";
+        try {
+            redisConnection = new RedisConnection(RankedPvP.getInstance(), connectionName, ip, password, port);
+        } catch (Exception exception) {
+            RankedPvP.logWarning("Error while initializing Redis connection!");
+            return;
+        }
+        RankedPvP.log("Initialized Redis connection.");
+        redisConnection.test();
+
+        // Initialize DataPacketManager
+        serverId = UUID.randomUUID().toString();
+        dataPacketManager = new DataPacketManager(RankedPvP.getInstance(), redisConnection, "RankedPvP", serverId, DataPacketManager.DEFAULT_PACKET_SEND_RECEIVE_INTERVAL, DataPacketManager.DEFAULT_CLEAR_OLD_PACKETS);
+
+        RankedPvP.getInstance().getServer().getPluginManager().registerEvents(this, RankedPvP.getInstance());
+
+        crossServerEnabled = true;
+    }
+
+    public void shareServerOnline () {
+        if (isCrossServerEnabled()) {
+            DataPacket.newBuilder()
+                    .action(Action.SERVER_ONLINE)
+                    .boolean1(true)
+                    .boolean2(RankedPvP.IS_MASTER)
+                    .buildPacket()
+                    .send();
+        }
+    }
+
+    public void onDisable () {
+        if (dataPacketManager != null) {
+            dataPacketManager.shutDown(true);
+        }
+    }
+
+    public String getServerId () {
+        return serverId;
+    }
+
+    public DataPacketManager getDataPacketManager () {
+        return dataPacketManager;
+    }
+
+    public boolean isCrossServerEnabled () {
+        return crossServerEnabled;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

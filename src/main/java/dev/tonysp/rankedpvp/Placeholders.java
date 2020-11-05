@@ -68,12 +68,12 @@ public class Placeholders extends PlaceholderExpansion {
         } else if (param.contains("player-rating-rank")) {
             int rank = Integer.parseInt(param.split("player-rating-rank")[1]);
             Optional<ArenaPlayer> arenaPlayer = PlayerManager.getInstance().getPlayerByRank(rank);
-            return arenaPlayer.map(player -> String.valueOf(player.getRatingRound())).orElse("");
+            return arenaPlayer.map(player -> PlayerManager.getInstance().getPlayerRating(player.getRatingVisible(), player.getMatches())).orElse("");
         } else if (param.contains("player-rating")) {
             if (offlinePlayer.getName() == null)
                 return "";
             ArenaPlayer arenaPlayer = PlayerManager.getInstance().getOrCreatePlayer(offlinePlayer.getName());
-            return String.valueOf(arenaPlayer.getRatingRound());
+            return PlayerManager.getInstance().getPlayerRating(arenaPlayer.getRatingVisible(), arenaPlayer.getMatches());
         }
 
         return null;

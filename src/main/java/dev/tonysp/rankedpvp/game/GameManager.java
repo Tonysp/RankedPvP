@@ -14,6 +14,7 @@ import dev.tonysp.rankedpvp.arenas.ArenaManager;
 import dev.tonysp.rankedpvp.arenas.Warp;
 import dev.tonysp.rankedpvp.data.Action;
 import dev.tonysp.rankedpvp.data.DataPacket;
+import dev.tonysp.rankedpvp.data.DataPacketProcessor;
 import dev.tonysp.rankedpvp.data.Database;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
 import dev.tonysp.rankedpvp.players.PlayerManager;
@@ -69,20 +70,20 @@ public class GameManager implements Listener {
         location.ifPresent(value -> {
             instance.spawn = Warp.fromLocation(value);
             if (RankedPvP.IS_MASTER) {
-                instance.spawn.server = DataPacketManager.getInstance().SERVER_ID;
+                instance.spawn.server = DataPacketProcessor.getInstance().getServerId();
             }
         });
 
         if (RankedPvP.IS_MASTER) {
-            ArrayList<MatchResult> matchHistory = Database.loadMatchHistory();
+            ArrayList<MatchResult> matchHistory = Database.getInstance().loadMatchHistory();
             for (MatchResult matchResult : matchHistory) {
                 PlayerManager.getInstance().getPlayerIfExists(matchResult.teamOne)
                         .ifPresent(player -> {
-                            player.getMatchHistory().add(matchResult);
+                            player.addMatchToHistory(matchResult);
                         });
                 PlayerManager.getInstance().getPlayerIfExists(matchResult.teamTwo)
                         .ifPresent(player -> {
-                            player.getMatchHistory().add(matchResult);
+                            player.addMatchToHistory(matchResult);
                         });
             }
         }
@@ -97,7 +98,7 @@ public class GameManager implements Listener {
     }
 
     public void checkQueue () {
-        playerQueue.values().forEach(value -> value.forEach(player -> player.incrementTimeInQueue()));
+        playerQueue.values().forEach(value -> value.forEach(ArenaPlayer::incrementTimeInQueue));
         for (Map.Entry<EventType, Integer> entry : checkQueue.entrySet()) {
             //PvPArena.log("check queue: " + entry.getValue());
             if (entry.getValue() == 0) {
@@ -148,7 +149,7 @@ public class GameManager implements Listener {
                 }
             }
         }
-        if (first == null || second == null) {
+        if (first == null) {
             return;
         }
 
@@ -190,22 +191,35 @@ public class GameManager implements Listener {
         Map<IPlayer, Rating> newRatings;
         if (winnerId == player1.getId().getId()) {
             newRatings = calculator.calculateNewRatings(game.gameInfo, Team.concat(team1, team2), 1, 2);
-            player1.getId().addWin();
-            player2.getId().addLoss();
         } else if (winnerId == player2.getId().getId()) {
             newRatings = calculator.calculateNewRatings(game.gameInfo, Team.concat(team1, team2), 2, 1);
-            player2.getId().addWin();
-            player1.getId().addLoss();
         } else {
             newRatings = calculator.calculateNewRatings(game.gameInfo, Team.concat(team1, team2), 1, 1);
-            player1.getId().addDraw();
-            player2.getId().addDraw();
         }
 
         Rating player1NewRating = newRatings.get(player1);
         Rating player2NewRating = newRatings.get(player2);
         player1.getId().setRating(player1NewRating);
         player2.getId().setRating(player2NewRating);
+
+        MatchResult result = new MatchResult();
+        result.teamOne = player1.getId().getId();
+        result.teamTwo = player2.getId().getId();
+        result.winnerTeam = winnerId;
+        result.arena = game.arena.name;
+        result.eventType = game.arena.eventType.toString();
+        result.timestamp = Utils.getCurrentTimeStamp();
+        result.teamOnePreR = player1OldRatingDouble;
+        result.teamTwoPreR = player2OldRatingDouble;
+        result.teamOnePostR = player1NewRating.getMean();
+        result.teamTwoPostR = player2NewRating.getMean();
+        result.teamOnePreD = player1OldDeviation;
+        result.teamTwoPreD = player2OldDeviation;
+        result.teamOnePostD = player1NewRating.getStandardDeviation();
+        result.teamTwoPostD = player2NewRating.getStandardDeviation();
+        player1.getId().addMatchToHistory(result);
+        player2.getId().addMatchToHistory(result);
+        Database.getInstance().insertMatchResult(result);
 
         int winnerOldRating, loserOldRating, winnerOldRatingVisible, loserOldRatingVisible, winnerOldMatches, loserOldMatches;
         double winnerOldRatingDouble, loserOldRatingDouble;
@@ -291,162 +305,8 @@ public class GameManager implements Listener {
         }, 60);
 
 
-        Database.updatePlayer(player1.getId());
-        Database.updatePlayer(player2.getId());
-
-        MatchResult result = new MatchResult();
-        result.teamOne = player1.getId().getId();
-        result.teamTwo = player2.getId().getId();
-        result.winnerTeam = winnerId;
-        result.arena = game.arena.name;
-        result.eventType = game.arena.eventType.toString();
-        result.timestamp = Utils.getCurrentTimeStamp();
-        result.teamOnePreR = player1OldRatingDouble;
-        result.teamTwoPreR = player2OldRatingDouble;
-        result.teamOnePostR = player1NewRating.getMean();
-        result.teamTwoPostR = player2NewRating.getMean();
-        result.teamOnePreD = player1OldDeviation;
-        result.teamTwoPreD = player2OldDeviation;
-        result.teamOnePostD = player1NewRating.getStandardDeviation();
-        result.teamTwoPostD = player2NewRating.getStandardDeviation();
-        player1.getId().getMatchHistory().add(result);
-        player2.getId().getMatchHistory().add(result);
-        Database.insertMatchResult(result);
-
-        final String announceMessageFinal = announceMessage;
-        Bukkit.getScheduler().scheduleSyncDelayedTask(RankedPvP.getInstance(), () -> {
-            PlayerManager.getInstance().announce(announceMessageFinal, true);
-        }, 60L);
-    }
-
-    public void gameEndedOld (TwoPlayerGame game, int winnerId) {
-        //PvPArena.log("game ended calculations win: " + winnerId);
-        de.gesundkrank.jskills.Player<ArenaPlayer> player1 = new de.gesundkrank.jskills.Player<>(game.playerOne);
-        de.gesundkrank.jskills.Player<ArenaPlayer> player2 = new de.gesundkrank.jskills.Player<>(game.playerTwo);
-        Team team1 = new Team(player1, new Rating(player1.getId().getRating(), player1.getId().getDeviation()));
-        Team team2 = new Team(player2, new Rating(player2.getId().getRating(), player2.getId().getDeviation()));
-
-        PlayerManager.getInstance().applyCooldown(player1.getId());
-        PlayerManager.getInstance().applyCooldown(player2.getId());
-
-        double player1OldRatingDouble = player1.getId().getRating();
-        double player2OldRatingDouble = player2.getId().getRating();
-        double player1OldDeviation = player1.getId().getDeviation();
-        double player2OldDeviation = player2.getId().getDeviation();
-        int player1OldRating = player1.getId().getRatingRound();
-        int player2OldRating = player2.getId().getRatingRound();
-        int player1OldMatches = player1.getId().getMatches();
-        int player2OldMatches = player2.getId().getMatches();
-
-        String winnerMessage = Messages.WIN_MESSAGE_CHANGE.getMessage();
-        String loserMessage = Messages.LOSE_MESSAGE_CHANGE.getMessage();
-        String drawMessage1 = Messages.DRAW_MESSAGE_CHANGE.getMessage();
-        String drawMessage2 = Messages.DRAW_MESSAGE_CHANGE.getMessage();
-        String announceMessageNotDraw = Messages.ANNOUNCE_NOT_DRAW.getMessage();
-        String announceMessageDraw = Messages.ANNOUNCE_DRAW.getMessage();
-        String firstMessage, secondMessage;
-        String winnerAnnounce, loserAnnounce, announceMessage;
-
-        TwoPlayerTrueSkillCalculator calculator = new TwoPlayerTrueSkillCalculator();
-        Map<IPlayer, Rating> newRatings;
-        if (winnerId == player1.getId().getId()) {
-            newRatings = calculator.calculateNewRatings(game.gameInfo, Team.concat(team1, team2), 1, 2);
-            player1.getId().addWin();
-            player2.getId().addLoss();
-        } else if (winnerId == player2.getId().getId()) {
-            newRatings = calculator.calculateNewRatings(game.gameInfo, Team.concat(team1, team2), 2, 1);
-            player2.getId().addWin();
-            player1.getId().addLoss();
-        } else {
-            newRatings = calculator.calculateNewRatings(game.gameInfo, Team.concat(team1, team2), 1, 1);
-            player1.getId().addDraw();
-            player2.getId().addDraw();
-        }
-        Rating player1NewRating = newRatings.get(player1);
-        Rating player2NewRating = newRatings.get(player2);
-        player1.getId().setRating(player1NewRating);
-        player2.getId().setRating(player2NewRating);
-
-        int winnerOldRating, loserOldRating, winnerOldMatches, loserOldMatches;
-        double winnerOldRatingDouble, loserOldRatingDouble;
-        Player<ArenaPlayer> winner, loser;
-
-        if (winnerId == player1.getId().getId() || player1OldRatingDouble < player1NewRating.getMean()) {
-            winnerOldRating = player1OldRating;
-            winnerOldRatingDouble = player1OldRatingDouble;
-            winnerOldMatches = player1OldMatches;
-            loserOldMatches = player2OldMatches;
-            winner = player1;
-            loserOldRating = player2OldRating;
-            loserOldRatingDouble = player2OldRatingDouble;
-            loser = player2;
-        } else if (winnerId == player2.getId().getId() || player2OldRatingDouble < player2NewRating.getMean()) {
-            winnerOldRating = player2OldRating;
-            winnerOldRatingDouble = player2OldRatingDouble;
-            winnerOldMatches = player2OldMatches;
-            loserOldMatches = player1OldMatches;
-            winner = player2;
-            loserOldRating = player1OldRating;
-            loserOldRatingDouble = player1OldRatingDouble;
-            loser = player1;
-        } else {
-            return;
-        }
-
-        winnerMessage = winnerMessage.replaceAll("%OLD%", PlayerManager.getInstance().getPlayerRating(winnerOldRating, winnerOldMatches))
-                .replaceAll("%NEW%", PlayerManager.getInstance().getPlayerRating(winner.getId().getRatingRound(), winner.getId().getMatches()));
-        loserMessage = loserMessage.replaceAll("%OLD%", PlayerManager.getInstance().getPlayerRating(loserOldRating, loserOldMatches))
-                .replaceAll("%NEW%", PlayerManager.getInstance().getPlayerRating(loser.getId().getRatingRound(), loser.getId().getMatches()));
-        drawMessage1 = drawMessage1.replaceAll("%OLD%", PlayerManager.getInstance().getPlayerRating(player1OldRating, player1OldMatches))
-                .replaceAll("%NEW%", PlayerManager.getInstance().getPlayerRating(player1.getId().getRatingRound(), player1.getId().getMatches()));
-        drawMessage2 = drawMessage2.replaceAll("%OLD%", PlayerManager.getInstance().getPlayerRating(player2OldRating, player2OldMatches))
-                .replaceAll("%NEW%", PlayerManager.getInstance().getPlayerRating(player2.getId().getRatingRound(), player2.getId().getMatches()));
-
-
-        double winnerRatingDiff = winner.getId().getRating() - winnerOldRatingDouble;
-        winnerAnnounce = winner.getId().getNameWithRatingAndChange(winnerRatingDiff);
-        double loserRatingDiff = loser.getId().getRating() - loserOldRatingDouble;
-        loserAnnounce = loser.getId().getNameWithRatingAndChange(loserRatingDiff);
-
-        announceMessage = announceMessageNotDraw.replaceAll("%WINNER%", winnerAnnounce).replaceAll("%LOSER%", loserAnnounce);
-
-        if (winnerId == player1.getId().getId()) {
-            firstMessage = winnerMessage;
-            secondMessage = loserMessage;
-        } else if (winnerId == player2.getId().getId()) {
-            firstMessage = loserMessage;
-            secondMessage = winnerMessage;
-        } else {
-            announceMessage = announceMessageDraw.replaceAll("%WINNER%", winnerAnnounce).replaceAll("%LOSER%", loserAnnounce);
-            firstMessage = drawMessage1;
-            secondMessage = drawMessage2;
-        }
-
-        Bukkit.getScheduler().scheduleSyncDelayedTask(RankedPvP.getInstance(), () -> {
-            PlayerManager.getInstance().sendMessageToPlayer(player1.getId().getName(), firstMessage, true);
-            PlayerManager.getInstance().sendMessageToPlayer(player2.getId().getName(), secondMessage, true);
-        }, 60);
-
-
-        Database.updatePlayer(player1.getId());
-        Database.updatePlayer(player2.getId());
-
-        MatchResult result = new MatchResult();
-        result.teamOne = player1.getId().getId();
-        result.teamTwo = player2.getId().getId();
-        result.winnerTeam = winnerId;
-        result.arena = game.arena.name;
-        result.eventType = game.arena.eventType.toString();
-        result.timestamp = Utils.getCurrentTimeStamp();
-        result.teamOnePreR = player1OldRatingDouble;
-        result.teamTwoPreR = player2OldRatingDouble;
-        result.teamOnePostR = player1NewRating.getMean();
-        result.teamTwoPostR = player2NewRating.getMean();
-        result.teamOnePreD = player1OldDeviation;
-        result.teamTwoPreD = player2OldDeviation;
-        result.teamOnePostD = player1NewRating.getStandardDeviation();
-        result.teamTwoPostD = player2NewRating.getStandardDeviation();
-        Database.insertMatchResult(result);
+        Database.getInstance().updatePlayer(player1.getId());
+        Database.getInstance().updatePlayer(player2.getId());
 
         final String announceMessageFinal = announceMessage;
         Bukkit.getScheduler().scheduleSyncDelayedTask(RankedPvP.getInstance(), () -> {

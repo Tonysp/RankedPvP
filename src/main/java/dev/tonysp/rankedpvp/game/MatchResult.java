@@ -35,5 +35,9 @@ public class MatchResult implements Serializable {
         TwoPlayerTrueSkillCalculator calculator = new TwoPlayerTrueSkillCalculator();
         return calculator.calculateMatchQuality(gameInfo, Team.concat(t0, t1));
     }
+
+    public boolean isDraw () {
+        return winnerTeam == -1;
+    }
 }
 

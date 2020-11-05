@@ -4,10 +4,11 @@ version: ${project.version}
 website: https://tonysp.dev/
 authors: [Tonysp]
 description: ${project.description}
-depend: [WorldEdit,WorldGuard,PluginData]
+depend: [WorldEdit,WorldGuard]
 softdepend: [PlaceholderAPI]
 api-version: 1.16
 
 commands:
-  pvp:
+  rankedpvp:
     description: Main command
+    aliases: [pvp]

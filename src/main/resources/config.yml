@@ -1,4 +1,14 @@
-master: true
+cross-server-settings:
+  enabled: false
+  master: true
+  redis-ip: "127.0.0.1"
+  redis-port: 6379
+  redis-password: ''
+
+mysql:
+  url: jdbc:mysql://localhost:3306/database
+  username: username
+  password: 'password'
 
 spawn: "125,25,123,20.5,15.1,world"
 

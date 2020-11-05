@@ -16,6 +16,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 import java.util.TreeSet;
@@ -25,27 +26,23 @@ public class PvPCommand implements CommandExecutor {
     public static final String TITLE = ChatColor.GOLD + "--// " + ChatColor.GRAY + "RankedPvP" + ChatColor.GOLD + " §l//--";
     public static final String FANCY_LINE = ChatColor.GRAY + "" + ChatColor.BOLD + "▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰";
 
-
-
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!command.getName().equalsIgnoreCase("pvp")) {
-            return false;
-        }
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, String label, String[] args) {
+        String usedCommand = label.toLowerCase();
 
         if (args.length == 0) {
             sender.sendMessage(TITLE);
-            sender.sendMessage(ChatColor.GOLD + "/pvp " + ChatColor.YELLOW + "player [name]" + ChatColor.GRAY + " - Shows player's PvP stats");
-            sender.sendMessage(ChatColor.GOLD + "/pvp " + ChatColor.YELLOW + "join [type]" + ChatColor.GRAY + " - Joins queue");
-            sender.sendMessage(ChatColor.GOLD + "/pvp " + ChatColor.YELLOW + "leave [type]" + ChatColor.GRAY + " - Leaves queue");
-            sender.sendMessage(ChatColor.GOLD + "/pvp " + ChatColor.YELLOW + "ladder [type]" + ChatColor.GRAY + " - Shows top 10 players of given ladder");
-            sender.sendMessage(ChatColor.GOLD + "/pvp " + ChatColor.YELLOW + "accept" + ChatColor.GRAY + " - Accepts match");
+            sender.sendMessage(ChatColor.GOLD + "/" + usedCommand + " " + ChatColor.YELLOW + "player [name]" + ChatColor.GRAY + " - Shows player's PvP stats");
+            sender.sendMessage(ChatColor.GOLD + "/" + usedCommand + " " + ChatColor.YELLOW + "join [type]" + ChatColor.GRAY + " - Joins queue");
+            sender.sendMessage(ChatColor.GOLD + "/" + usedCommand + " " + ChatColor.YELLOW + "leave [type]" + ChatColor.GRAY + " - Leaves queue");
+            sender.sendMessage(ChatColor.GOLD + "/" + usedCommand + " " + ChatColor.YELLOW + "ladder [type]" + ChatColor.GRAY + " - Shows top 10 players of given ladder");
+            sender.sendMessage(ChatColor.GOLD + "/" + usedCommand + " " + ChatColor.YELLOW + "accept" + ChatColor.GRAY + " - Accepts match");
             return true;
         }
 
         if (args[0].equalsIgnoreCase("player")) {
             if (args.length <= 1) {
-                sender.sendMessage(ChatColor.YELLOW + "Usage: /pvp player [name]");
+                sender.sendMessage(ChatColor.YELLOW + "Usage: /" + usedCommand + " player [name]");
                 return true;
             }
             Optional<ArenaPlayer> player = PlayerManager.getInstance().getPlayerIfExists(args[1]);
@@ -81,7 +78,7 @@ public class PvPCommand implements CommandExecutor {
                 return true;
             }
             if (args.length <= 1) {
-                sender.sendMessage(ChatColor.YELLOW + "Usage: /pvp join [type]");
+                sender.sendMessage(ChatColor.YELLOW + "Usage: /" + usedCommand + " join [type]");
                 return true;
             }
 
@@ -98,7 +95,7 @@ public class PvPCommand implements CommandExecutor {
                 return true;
             }
             if (args.length <= 1) {
-                sender.sendMessage(ChatColor.YELLOW + "Usage: /pvp leave [type]");
+                sender.sendMessage(ChatColor.YELLOW + "Usage: /" + usedCommand + " leave [type]");
                 return true;
             }
 
@@ -115,7 +112,7 @@ public class PvPCommand implements CommandExecutor {
                 return true;
             }
             if (args.length <= 1) {
-                sender.sendMessage(ChatColor.YELLOW + "Usage: /pvp togglejoin [type]");
+                sender.sendMessage(ChatColor.YELLOW + "Usage: /" + usedCommand + " togglejoin [type]");
                 return true;
             }
 

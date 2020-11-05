@@ -5,15 +5,14 @@ import de.gesundkrank.jskills.Player;
 import de.gesundkrank.jskills.Rating;
 import de.gesundkrank.jskills.Team;
 import de.gesundkrank.jskills.trueskill.TwoPlayerTrueSkillCalculator;
-import dev.tonysp.plugindata.databases.DatabaseManager;
+import dev.tonysp.plugindata.connections.mysql.MysqlConnection;
 import dev.tonysp.rankedpvp.RankedPvP;
-import dev.tonysp.rankedpvp.Utils;
 import dev.tonysp.rankedpvp.game.Game;
 import dev.tonysp.rankedpvp.game.MatchResult;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
-import dev.tonysp.rankedpvp.players.EntityWithRating;
 import dev.tonysp.rankedpvp.players.PlayerManager;
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.FileConfiguration;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -21,15 +20,42 @@ import java.util.HashMap;
 
 public class Database {
 
-    private static String TABLE_PREFIX;
+    private static Database instance;
 
-    private static Connection getGlobalConnection () throws SQLException {
-        return DatabaseManager.getInstance().getConnection("GLOBAL");
+    private static String TABLE_PREFIX;
+    private MysqlConnection mysqlConnection;
+
+    public static Database getInstance () {
+        if (instance == null) {
+            instance = new Database();
+        }
+        return instance;
     }
 
-    public static void initializeTables(){
+    private Database () {
+        FileConfiguration config = RankedPvP.getInstance().getConfig();
+        String url, username, password;
+        url = config.getString("mysql.url", "");
+        username = config.getString("mysql.username", "");
+        password = config.getString("mysql.password", "");
+        String connectionName = "RankedPvP-plugin-mysql";
+        try {
+            mysqlConnection = new MysqlConnection(connectionName, url, username, password);
+        } catch (Exception exception) {
+            RankedPvP.logWarning("Error while initializing MySQL connection!");
+            return;
+        }
+        RankedPvP.log("Initialized MySQL connection.");
+        mysqlConnection.test();
+    }
+
+    private Connection getConnection () throws SQLException {
+        return mysqlConnection.getConnection();
+    }
+
+    public void initializeTables(){
         TABLE_PREFIX = RankedPvP.getInstance().getConfig().getString("table-prefix", "rankedpvp_");
-        try (Connection connection = getGlobalConnection()) {
+        try (Connection connection = getConnection()) {
             PreparedStatement sql = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `" + TABLE_PREFIX + "players` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT,`name` varchar(16) NOT NULL,`rating` double NOT NULL,`deviation` double NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;");
             sql.executeUpdate();
             sql.close();
@@ -42,9 +68,9 @@ public class Database {
         }
     }
 
-    public static HashMap<String, ArenaPlayer> loadPlayers() {
+    public HashMap<String, ArenaPlayer> loadPlayers() {
         HashMap<String, ArenaPlayer> players = new HashMap<>();
-        try (Connection connection = getGlobalConnection();
+        try (Connection connection = getConnection();
              PreparedStatement sql = connection.prepareStatement("SELECT * FROM " + TABLE_PREFIX + "players;");
              ResultSet resultSet = sql.executeQuery();
         ) {
@@ -52,24 +78,6 @@ public class Database {
                 ArenaPlayer player = new ArenaPlayer(resultSet.getString("name"), resultSet.getDouble("rating"), resultSet.getDouble("deviation"));
                 player.setId(resultSet.getInt("id"));
                 players.put(player.getName().toLowerCase(), player);
-
-                PreparedStatement sql2 = connection.prepareStatement("SELECT * FROM " + TABLE_PREFIX + "matches WHERE `team-one`=? OR `team-two`=?;");
-                sql2.setInt(1, player.getId());
-                sql2.setInt(2, player.getId());
-                ResultSet resultSet2 = sql2.executeQuery();
-
-                while (resultSet2.next()) {
-                    int winnerTeamId = resultSet2.getInt("winner-team");
-                    if (winnerTeamId == player.getId()) {
-                        player.addWin();
-                    } else if (winnerTeamId != -1) {
-                        player.addLoss();
-                    } else {
-                        player.addDraw();
-                    }
-                }
-                resultSet2.close();
-                sql2.close();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -78,9 +86,9 @@ public class Database {
         return players;
     }
 
-    public static ArrayList<MatchResult> loadMatchHistory() {
+    public ArrayList<MatchResult> loadMatchHistory() {
         ArrayList<MatchResult> matches = new ArrayList<>();
-        try (Connection connection = getGlobalConnection();
+        try (Connection connection = getConnection();
              PreparedStatement sql = connection.prepareStatement("SELECT * FROM " + TABLE_PREFIX + "matches;");
              ResultSet resultSet = sql.executeQuery();
         ) {
@@ -109,9 +117,9 @@ public class Database {
         return matches;
     }
 
-    public static void insertPlayer (ArenaPlayer player){
+    public void insertPlayer (ArenaPlayer player){
         Bukkit.getScheduler().runTask(RankedPvP.getInstance(), () -> {
-            try (Connection connection = getGlobalConnection();
+            try (Connection connection = getConnection();
                  PreparedStatement sql = connection.prepareStatement("INSERT INTO " + TABLE_PREFIX + "players (name, rating, deviation) VALUES (?,?,?);", Statement.RETURN_GENERATED_KEYS);
             ) {
                 sql.setString(1, player.getName());
@@ -130,8 +138,8 @@ public class Database {
         });
     }
 
-    public static void showQualities (){
-        try (Connection connection = getGlobalConnection();
+    public void showQualities (){
+        try (Connection connection = getConnection();
              PreparedStatement sql = connection.prepareStatement("SELECT * FROM `" + TABLE_PREFIX + "matches`;");
         ) {
             ResultSet resultSet = sql.executeQuery();
@@ -190,7 +198,7 @@ public class Database {
                 //RankedPvP.log(v.name + " " + v.rating + " <> " + v.deviation + " - count: " + v.count + ", mean quality: " + v.getAverageQuality());
                 RankedPvP.log(v.getAverageQuality() + "");
                 if (v.getAverageQuality() <= 0.3) {
-                    //RankedPvP.log("BAD QUALITY " + mm.count++);
+                    RankedPvP.log("BAD QUALITY " + mm.count++);
                 }
             });
         }catch (Exception e){
@@ -198,9 +206,9 @@ public class Database {
         }
     }
 
-    public static void insertMatchResult (MatchResult result){
+    public void insertMatchResult (MatchResult result){
         Bukkit.getScheduler().runTask(RankedPvP.getInstance(), () -> {
-            try (Connection connection = getGlobalConnection();
+            try (Connection connection = getConnection();
                  PreparedStatement sql = connection.prepareStatement("INSERT INTO `" + TABLE_PREFIX + "matches`(`team-one`, `team-two`, `winner-team`, `arena`, `event-type`, `datetime`, `team-one-pre-rating`, `team-two-pre-rating`, `team-one-post-rating`, `team-two-post-rating`, `team-one-pre-deviation`, `team-two-pre-deviation`, `team-one-post-deviation`, `team-two-post-deviation`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?);");
             ) {
                 sql.setInt(1, result.teamOne);
@@ -224,9 +232,9 @@ public class Database {
         });
     }
 
-    public static void updatePlayer (ArenaPlayer player){
+    public void updatePlayer (ArenaPlayer player){
         Bukkit.getScheduler().runTask(RankedPvP.getInstance(), () -> {
-            try (Connection connection = getGlobalConnection();
+            try (Connection connection = getConnection();
                  PreparedStatement sql = connection.prepareStatement("UPDATE " + TABLE_PREFIX + "players SET name=?,rating=?,deviation=? WHERE id=?;");
             ) {
                 sql.setString(1, player.getName());

@@ -8,6 +8,7 @@ import dev.tonysp.rankedpvp.Utils;
 import dev.tonysp.rankedpvp.arenas.Warp;
 import dev.tonysp.rankedpvp.data.Action;
 import dev.tonysp.rankedpvp.data.DataPacket;
+import dev.tonysp.rankedpvp.data.DataPacketProcessor;
 import dev.tonysp.rankedpvp.data.Database;
 import dev.tonysp.rankedpvp.game.GameManager;
 import dev.tonysp.rankedpvp.game.TwoPlayerGame;
@@ -58,7 +59,7 @@ public class PlayerManager implements Listener {
         } catch (Exception ignored) {}
 
         if (RankedPvP.IS_MASTER) {
-            instance.players = Database.loadPlayers();
+            instance.players = Database.getInstance().loadPlayers();
             for (ArenaPlayer arenaPlayer : instance.players.values()) {
                 instance.playersById.put(arenaPlayer.getId(), arenaPlayer);
             }
@@ -106,7 +107,7 @@ public class PlayerManager implements Listener {
     public void sendAcceptMessageToPlayer (String playerName, int timeRemaining, boolean share) {
         Player player = Bukkit.getPlayer(playerName);
         if (player == null || !player.isOnline()) {
-            if (share) {
+            if (share && DataPacketProcessor.getInstance().isCrossServerEnabled()) {
                 DataPacket.newBuilder()
                         .action(Action.GAME_ACCEPT_REMINDER)
                         .string(playerName)
@@ -131,7 +132,7 @@ public class PlayerManager implements Listener {
     public void savePlayerLocationAndTeleport (String playerName, boolean share) {
         Player player = Bukkit.getPlayer(playerName);
         if (player == null || !player.isOnline()) {
-            if (share) {
+            if (share && DataPacketProcessor.getInstance().isCrossServerEnabled()) {
                 DataPacket.newBuilder()
                         .action(Action.SAVE_PLAYER_LOCATION_AND_TP)
                         .string(playerName)
@@ -173,7 +174,7 @@ public class PlayerManager implements Listener {
             sendMessageToPlayer(player.getName(), message, false);
         }
 
-        if (share) {
+        if (share && DataPacketProcessor.getInstance().isCrossServerEnabled()) {
             ArrayList<String> list = new ArrayList<>();
             list.add(except1);
             list.add(except2);
@@ -197,7 +198,7 @@ public class PlayerManager implements Listener {
             return;
         }
 
-        if (share) {
+        if (share && DataPacketProcessor.getInstance().isCrossServerEnabled()) {
             DataPacket.newBuilder()
                     .action(Action.PLAYER_MESSAGE)
                     .string(playerName)
@@ -249,7 +250,7 @@ public class PlayerManager implements Listener {
     private ArenaPlayer createPlayer (String name) {
         ArenaPlayer player = new ArenaPlayer(name);
         if (RankedPvP.IS_MASTER) {
-            Database.insertPlayer(player);
+            Database.getInstance().insertPlayer(player);
         }
         String nameLower = name.toLowerCase();
         playersById.put(player.getId(), player);
@@ -287,12 +288,12 @@ public class PlayerManager implements Listener {
         Iterator<ArenaPlayer> it = players.iterator();
         int i = 0;
         ArenaPlayer current = null;
-        while(it.hasNext() && i <= rank) {
+        while(it.hasNext() && i < rank) {
             current = it.next();
             i++;
         }
 
-        if (i == rank + 1) {
+        if (i == rank + 1 && current != null) {
             return Optional.of(current);
         } else {
             return Optional.empty();

@@ -14,12 +14,13 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
 
 public class RankedPvP extends JavaPlugin {
 
-    public static boolean IS_MASTER = false;
+    public static boolean IS_MASTER = true;
     public static final String PLUGIN_ID = "rankedpvp";
     public static String MASTER_ID;
     public static Set<String> otherServers = new HashSet<>();
@@ -32,7 +33,7 @@ public class RankedPvP extends JavaPlugin {
     public void onEnable () {
         loadConfig();
 
-        Database.initializeTables();
+        Database.getInstance().initializeTables();
 
         Messages.loadFromConfig(getConfig());
         EventType.loadSettings(getConfig());
@@ -42,7 +43,8 @@ public class RankedPvP extends JavaPlugin {
 
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         new PlayerCommandPreprocessListener();
-        this.getCommand("pvp").setExecutor(new PvPCommand());
+
+        Objects.requireNonNull(getCommand("rankedpvp")).setExecutor(new PvPCommand());
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new Placeholders(this).register();
@@ -50,12 +52,14 @@ public class RankedPvP extends JavaPlugin {
         } else {
             log("PlaceholderAPI integration disabled.");
         }
-        DataPacketProcessor.getInstance();
+        DataPacketProcessor.getInstance().shareServerOnline();
+        Database.getInstance();
     }
 
     @Override
     public void onDisable () {
         GameManager.getInstance().endAllGames();
+        DataPacketProcessor.getInstance().onDisable();
     }
 
     private void loadConfig () {
@@ -74,8 +78,6 @@ public class RankedPvP extends JavaPlugin {
         }
 
         reloadConfig();
-
-        IS_MASTER = getConfig().getBoolean("master");
     }
 
     public static void log (String text) {

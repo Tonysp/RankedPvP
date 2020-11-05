@@ -6,7 +6,7 @@
 
     <groupId>dev.tonysp</groupId>
     <artifactId>RankedPvP</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -16,11 +16,20 @@
 
     <repositories>
         <repository>
+            <id>local-repo</id>
+            <url>file://${project.basedir}/repo/</url>
+        </repository>
+        <repository>
             <id>spigot-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
+        </repository>
+        <repository>
+            <id>sk89q-repo</id>
+            <url>https://maven.enginehub.org/repo/</url>
+        </repository>
+        <repository>
+            <id>placeholderapi</id>
+            <url>http://repo.extendedclip.com/content/repositories/placeholderapi/</url>
         </repository>
     </repositories>
 
@@ -32,39 +41,40 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.sk89q</groupId>
-            <artifactId>worldguard</artifactId>
-            <version>LATEST</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/worldguard-bukkit-7.0.0.jar</systemPath>
+            <groupId>com.sk89q.worldguard</groupId>
+            <artifactId>worldguard-bukkit</artifactId>
+            <version>7.0.0</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.sk89q</groupId>
-            <artifactId>worldedit</artifactId>
-            <version>LATEST</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/worldedit-bukkit-7.0.1-rc1-dist.jar</systemPath>
+            <groupId>com.sk89q.worldedit</groupId>
+            <artifactId>worldedit-bukkit</artifactId>
+            <version>7.0.1</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>dev.tonysp.plugindata</groupId>
             <artifactId>PluginData</artifactId>
-            <version>LATEST</version>
-            <optional>false</optional>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/PluginData.jar</systemPath>
+            <version>2.0.0</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>de.gesundkrank.jskills</groupId>
             <artifactId>jskills</artifactId>
             <version>1.1</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>me.clip</groupId>
-            <artifactId>PlaceholderAPI</artifactId>
-            <version>LATEST</version>
-            <optional>false</optional>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/PlaceholderAPI-2.10.9.jar</systemPath>
+            <artifactId>placeholderapi</artifactId>
+            <version>2.9.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>RELEASE</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 
@@ -74,7 +84,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>2.4.3</version>
+                <version>3.2.4</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -84,18 +94,43 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <finalName>RankedPvP</finalName>
+                    <shadedArtifactAttached>false</shadedArtifactAttached>
                     <relocations>
                         <relocation>
                             <pattern>de.gesundkrank.jskills</pattern>
                             <shadedPattern>dev.tonysp.rankedpvp.shaded.de.gesundkrank.jskills</shadedPattern>
                         </relocation>
+                        <relocation>
+                            <pattern>dev.tonysp.plugindata</pattern>
+                            <shadedPattern>dev.tonysp.rankedpvp.shaded.dev.tonysp.plugindata</shadedPattern>
+                        </relocation>
                     </relocations>
                     <artifactSet>
                         <includes>
                             <include>de.gesundkrank.jskills:*</include>
+                            <include>dev.tonysp.plugindata:*</include>
                         </includes>
                     </artifactSet>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <delete file="${project.build.directory}/original-${project.artifactId}.jar"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
         <resources>

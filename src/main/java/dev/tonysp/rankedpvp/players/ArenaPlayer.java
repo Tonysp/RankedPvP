@@ -1,7 +1,6 @@
 package dev.tonysp.rankedpvp.players;
 
 import dev.tonysp.rankedpvp.Messages;
-import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.game.MatchResult;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -11,7 +10,6 @@ import org.bukkit.inventory.ItemStack;
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWithRating>, Serializable {
@@ -110,8 +108,15 @@ public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWi
         this.timeInQueue = 0;
     }
 
-    public List<MatchResult> getMatchHistory () {
-        return matchHistory;
+    public void addMatchToHistory (MatchResult matchResult) {
+        matchHistory.add(matchResult);
+        if (matchResult.winnerTeam == getId()) {
+            wins ++;
+        } else if (matchResult.isDraw()) {
+            draws ++;
+        } else {
+            losses ++;
+        }
     }
 
     public String getNameWithRatingAndChange (double change) {

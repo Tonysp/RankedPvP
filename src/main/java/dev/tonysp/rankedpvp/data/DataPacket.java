@@ -42,7 +42,7 @@ public class DataPacket extends dev.tonysp.plugindata.data.packets.DataPacket {
             List<String> stringList,
             Map<String, List<Warp>> warps
     ) {
-        super(RankedPvP.PLUGIN_ID, receivers);
+        super(DataPacketProcessor.getInstance().getDataPacketManager(), RankedPvP.PLUGIN_ID, receivers);
         this.setSender(sender);
         this.action = action;
         this.warp = warp;
@@ -116,7 +116,7 @@ public class DataPacket extends dev.tonysp.plugindata.data.packets.DataPacket {
 
         public DataPacket buildPacket () {
             return new DataPacket(
-                    DataPacketManager.getInstance().SERVER_ID,
+                    DataPacketProcessor.getInstance().getServerId(),
                     this.receivers,
                     this.action,
                     this.warp,
