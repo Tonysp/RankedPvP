@@ -330,7 +330,7 @@ public class PlayerManager implements Listener {
             i++;
         }
 
-        if (i == rank + 1 && current != null) {
+        if (i == rank && current != null) {
             return Optional.of(current);
         } else {
             return Optional.empty();
