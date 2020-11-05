@@ -1,7 +1,9 @@
-# RankedPvP
-Minecraft Ranked PvP arena plugin.
+<h1>
+    <img src="rankedpvplogotext.png" alt="Ranked PvP" width="400" /> 
+</h1>
 
-## Features
+Arena minigame plugin for Minecraft servers.
+
 * Advanced matchmaking system ensuring fair matches
 * Works on top of the most advanced ranking system ([TrueSkill](https://trueskill.org/))
 * Supports multiple server instances (BungeeCord support)
