@@ -337,10 +337,11 @@ public class PlayerManager implements Listener {
             if (!player.isPresent() || !GameManager.getInstance().getInProgress().containsKey(player.get()))
                 return;
 
-            player.get().backupInventory();
-            player.get().restoreArenaEquip();
-
             TwoPlayerGame game = (TwoPlayerGame) GameManager.getInstance().getInProgress().get(player.get());
+            if (game.getArena().eventType.isBackupInventory()) {
+                player.get().backupInventory();
+                player.get().restoreArenaEquip();
+            }
             if (!game.getArena().isInArena(player.get())) {
                 if (game.playerOne.equals(player.get())) {
                     game.teleportPlayerOneToLobby();

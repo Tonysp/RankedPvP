@@ -10,6 +10,7 @@ import dev.tonysp.rankedpvp.players.PlayerManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -67,8 +68,10 @@ public class TwoPlayerGame extends Game {
 
             if (firstInArena && secondInArena) {
                 if (timeToStart == timeToStartFull) {
-                    playerOne.backupInventory();
-                    playerTwo.backupInventory();
+                    if (getArena().eventType.isBackupInventory()) {
+                        playerOne.backupInventory();
+                        playerTwo.backupInventory();
+                    }
 
                     arena.eventType.runStartCommands(playerOne.getName());
                     arena.eventType.runStartCommands(playerTwo.getName());
@@ -78,14 +81,18 @@ public class TwoPlayerGame extends Game {
                 Player playerOnePlayer = Bukkit.getPlayer(playerOne.getName());
                 Player playerTwoPlayer = Bukkit.getPlayer(playerTwo.getName());
                 if (timeToStart == 0) {
-                    playerOnePlayer.playSound(playerOnePlayer.getLocation(), Sound.BLOCK_BELL_USE, 1.0f, 1.0f);
-                    playerTwoPlayer.playSound(playerTwoPlayer.getLocation(), Sound.BLOCK_BELL_USE, 1.0f, 1.0f);
+                    if (playerOnePlayer != null)
+                        playerOnePlayer.playSound(playerOnePlayer.getLocation(), Sound.BLOCK_BELL_USE, 1.0f, 1.0f);
+                    if (playerTwoPlayer != null)
+                        playerTwoPlayer.playSound(playerTwoPlayer.getLocation(), Sound.BLOCK_BELL_USE, 1.0f, 1.0f);
                     Messages.BATTLE_STARTED.sendTo(playerOne.getName());
                     Messages.BATTLE_STARTED.sendTo(playerTwo.getName());
                     startMatch();
                 } else if (timeToStart % 4 == 0) {
-                    playerOnePlayer.playSound(playerOnePlayer.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-                    playerTwoPlayer.playSound(playerTwoPlayer.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+                    if (playerOnePlayer != null)
+                        playerOnePlayer.playSound(playerOnePlayer.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+                    if (playerTwoPlayer != null)
+                        playerTwoPlayer.playSound(playerTwoPlayer.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
                     Messages.BATTLE_STARTING_IN.sendTo(playerOne.getName(), "%TIME%:" + Utils.secondString(timeToStart / 4));
                     Messages.BATTLE_STARTING_IN.sendTo(playerTwo.getName(), "%TIME%:" + Utils.secondString(timeToStart / 4));
                 }
@@ -194,8 +201,15 @@ public class TwoPlayerGame extends Game {
             return;
         }
 
-        bukkitPlayerOne.setHealth(bukkitPlayerOne.getAttribute(Attribute.GENERIC_MAX_HEALTH).getDefaultValue());
-        bukkitPlayerTwo.setHealth(bukkitPlayerOne.getAttribute(Attribute.GENERIC_MAX_HEALTH).getDefaultValue());
+        AttributeInstance attribute;
+        attribute = bukkitPlayerOne.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        if (attribute != null)
+            bukkitPlayerOne.setHealth(attribute.getDefaultValue());
+
+        attribute = bukkitPlayerTwo.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        if (attribute != null)
+            bukkitPlayerTwo.setHealth(attribute.getDefaultValue());
+
 
         gameState = GameState.IN_PROGRESS;
         arena.openEntrance();
