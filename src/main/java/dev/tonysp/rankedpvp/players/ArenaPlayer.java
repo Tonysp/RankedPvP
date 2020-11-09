@@ -42,30 +42,42 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWithRating>, Serializable {
 
     private String name;
+    private UUID uuid;
     private transient ItemStack[] inventoryBackup, arenaInventoryBackup;
     private transient Collection<PotionEffect> statusEffectBackup, arenaStatusEffectBackup;
     private int timeInQueue = 0;
     private final List<MatchResult> matchHistory = new ArrayList<>();
     private double visibleRatingCoefficient = 1;
 
-    public ArenaPlayer (String name) {
+    public ArenaPlayer (UUID uuid) {
         super();
-        this.name = name;
+        this.uuid = uuid;
+        this.name = Bukkit.getOfflinePlayer(uuid).getName();
         recalculateVisibleRatingCoefficient();
     }
 
-    public ArenaPlayer (String name, double rating, double deviation) {
+    public ArenaPlayer (UUID uuid, double rating, double deviation) {
         super(rating, deviation);
-        this.name = name;
+        this.uuid = uuid;
+        this.name = Bukkit.getOfflinePlayer(uuid).getName();
         recalculateVisibleRatingCoefficient();
     }
 
     public String getName () {
         return name;
+    }
+
+    public void setName (String name) {
+        this.name = name;
+    }
+
+    public UUID getUuid () {
+        return uuid;
     }
 
     public String getNameWithRating () {

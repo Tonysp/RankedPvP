@@ -98,7 +98,7 @@ public class Placeholders extends PlaceholderExpansion {
         } else if (param.contains("player-rating")) {
             if (offlinePlayer.getName() == null)
                 return "";
-            ArenaPlayer arenaPlayer = PlayerManager.getInstance().getOrCreatePlayer(offlinePlayer.getName());
+            ArenaPlayer arenaPlayer = PlayerManager.getInstance().getOrCreatePlayer(offlinePlayer.getUniqueId());
             return PlayerManager.getInstance().getPlayerRating(arenaPlayer.getRatingVisible(), arenaPlayer.getMatches());
         }
 

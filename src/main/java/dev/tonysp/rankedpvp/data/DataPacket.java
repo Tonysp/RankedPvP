@@ -30,10 +30,7 @@ import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.arenas.Warp;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class DataPacket extends dev.tonysp.plugindata.data.packets.DataPacket {
 
@@ -41,6 +38,7 @@ public class DataPacket extends dev.tonysp.plugindata.data.packets.DataPacket {
     private final Warp warp;
     private final ArenaPlayer player;
     private final String string, string2;
+    private final UUID uuid;
     private final int integer;
     private final boolean boolean1, boolean2;
     private final Map<String, String> stringMap;
@@ -59,6 +57,7 @@ public class DataPacket extends dev.tonysp.plugindata.data.packets.DataPacket {
             ArenaPlayer player,
             String string,
             String string2,
+            UUID uuid,
             int integer,
             boolean boolean1,
             boolean boolean2,
@@ -73,6 +72,7 @@ public class DataPacket extends dev.tonysp.plugindata.data.packets.DataPacket {
         this.player = player;
         this.string = string;
         this.string2 = string2;
+        this.uuid = uuid;
         this.integer = integer;
         this.boolean1 = boolean1;
         this.boolean2 = boolean2;
@@ -99,6 +99,10 @@ public class DataPacket extends dev.tonysp.plugindata.data.packets.DataPacket {
 
     public String getString2 () {
         return string2;
+    }
+
+    public UUID getUuid () {
+        return uuid;
     }
 
     public int getInteger () {
@@ -132,6 +136,7 @@ public class DataPacket extends dev.tonysp.plugindata.data.packets.DataPacket {
         private Warp warp;
         private ArenaPlayer player;
         private String string, string2;
+        private UUID uuid;
         private int integer;
         private boolean boolean1, boolean2;
         private Map<String, String> stringMap;
@@ -147,6 +152,7 @@ public class DataPacket extends dev.tonysp.plugindata.data.packets.DataPacket {
                     this.player,
                     this.string,
                     this.string2,
+                    this.uuid,
                     this.integer,
                     this.boolean1,
                     this.boolean2,
@@ -187,6 +193,11 @@ public class DataPacket extends dev.tonysp.plugindata.data.packets.DataPacket {
 
         public DataPacket.Builder string2 (String string2) {
             this.string2 = string2;
+            return this;
+        }
+
+        public DataPacket.Builder uuid (UUID uuid) {
+            this.uuid = uuid;
             return this;
         }
 

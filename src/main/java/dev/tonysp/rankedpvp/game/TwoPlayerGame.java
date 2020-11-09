@@ -71,15 +71,15 @@ public class TwoPlayerGame extends Game {
                 String message = Messages.DID_NOT_ACCEPT.getMessage();
                 String message2 = Messages.OPPONENT_DID_NOT_ACCEPT.getMessage();
                 if (!oneAccepted) {
-                    PlayerManager.getInstance().sendMessageToPlayer(playerOne.getName(), message, true);
+                    PlayerManager.getInstance().sendMessageToPlayer(playerOne.getUuid(), message, true);
                     if (twoAccepted) {
-                        PlayerManager.getInstance().sendMessageToPlayer(playerTwo.getName(), message2, true);
+                        PlayerManager.getInstance().sendMessageToPlayer(playerTwo.getUuid(), message2, true);
                     }
                 }
                 if (!twoAccepted) {
-                    PlayerManager.getInstance().sendMessageToPlayer(playerTwo.getName(), message, true);
+                    PlayerManager.getInstance().sendMessageToPlayer(playerTwo.getUuid(), message, true);
                     if (oneAccepted) {
-                        PlayerManager.getInstance().sendMessageToPlayer(playerOne.getName(), message2, true);
+                        PlayerManager.getInstance().sendMessageToPlayer(playerOne.getUuid(), message2, true);
                     }
                 }
 
@@ -113,16 +113,16 @@ public class TwoPlayerGame extends Game {
                         playerOnePlayer.playSound(playerOnePlayer.getLocation(), Sound.BLOCK_BELL_USE, 1.0f, 1.0f);
                     if (playerTwoPlayer != null)
                         playerTwoPlayer.playSound(playerTwoPlayer.getLocation(), Sound.BLOCK_BELL_USE, 1.0f, 1.0f);
-                    Messages.BATTLE_STARTED.sendTo(playerOne.getName());
-                    Messages.BATTLE_STARTED.sendTo(playerTwo.getName());
+                    Messages.BATTLE_STARTED.sendTo(playerOne.getUuid());
+                    Messages.BATTLE_STARTED.sendTo(playerTwo.getUuid());
                     startMatch();
                 } else if (timeToStart % 4 == 0) {
                     if (playerOnePlayer != null)
                         playerOnePlayer.playSound(playerOnePlayer.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
                     if (playerTwoPlayer != null)
                         playerTwoPlayer.playSound(playerTwoPlayer.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-                    Messages.BATTLE_STARTING_IN.sendTo(playerOne.getName(), "%TIME%:" + Utils.secondString(timeToStart / 4));
-                    Messages.BATTLE_STARTING_IN.sendTo(playerTwo.getName(), "%TIME%:" + Utils.secondString(timeToStart / 4));
+                    Messages.BATTLE_STARTING_IN.sendTo(playerOne.getUuid(), "%TIME%:" + Utils.secondString(timeToStart / 4));
+                    Messages.BATTLE_STARTING_IN.sendTo(playerTwo.getUuid(), "%TIME%:" + Utils.secondString(timeToStart / 4));
                 }
                 return;
             }
@@ -135,10 +135,10 @@ public class TwoPlayerGame extends Game {
 
             if (timeToTeleport % (7*4) == 0 && timeToTeleport <= 21*4) {
                 if (!firstInArena) {
-                    PlayerManager.getInstance().savePlayerLocationAndTeleport(playerOne.getName(), true);
+                    PlayerManager.getInstance().savePlayerLocationAndTeleport(playerOne.getUuid(), true);
                 }
                 if (!secondInArena) {
-                    PlayerManager.getInstance().savePlayerLocationAndTeleport(playerTwo.getName(), true);
+                    PlayerManager.getInstance().savePlayerLocationAndTeleport(playerTwo.getUuid(), true);
                 }
             }
             timeToTeleport --;
@@ -149,10 +149,10 @@ public class TwoPlayerGame extends Game {
             boolean secondInArena = arena.isInArena(playerTwo);
             if (timeRemaining % (5*4) == 0) {
                 if (timeRemaining != 0 && !firstInArena && secondInArena) {
-                    Messages.OPPONENT_NOT_IN_ARENA.sendTo(playerTwo.getName(), "%TIME%:" + Utils.secondString(timeToReturnOne / 4));
+                    Messages.OPPONENT_NOT_IN_ARENA.sendTo(playerTwo.getUuid(), "%TIME%:" + Utils.secondString(timeToReturnOne / 4));
                 }
                 if (timeRemaining != 0 && !secondInArena && firstInArena) {
-                    Messages.OPPONENT_NOT_IN_ARENA.sendTo(playerOne.getName(), "%TIME%:" + Utils.secondString(timeToReturnTwo / 4));
+                    Messages.OPPONENT_NOT_IN_ARENA.sendTo(playerOne.getUuid(), "%TIME%:" + Utils.secondString(timeToReturnTwo / 4));
                 }
             }
 
@@ -186,21 +186,21 @@ public class TwoPlayerGame extends Game {
                 } else if (timeRemaining == 120*4) {
                     message = message.replaceAll("%TIME%", "zbyvaji 2 minuty");
                 }
-                PlayerManager.getInstance().sendMessageToPlayer(playerOne.getName(), message, true);
-                PlayerManager.getInstance().sendMessageToPlayer(playerTwo.getName(), message, true);
+                PlayerManager.getInstance().sendMessageToPlayer(playerOne.getUuid(), message, true);
+                PlayerManager.getInstance().sendMessageToPlayer(playerTwo.getUuid(), message, true);
             }
             if (timeRemaining == 30*4) {
                 message = message.replaceAll("%TIME%", "zbyva 30 sekund");
-                PlayerManager.getInstance().sendMessageToPlayer(playerOne.getName(), message, true);
-                PlayerManager.getInstance().sendMessageToPlayer(playerTwo.getName(), message, true);
+                PlayerManager.getInstance().sendMessageToPlayer(playerOne.getUuid(), message, true);
+                PlayerManager.getInstance().sendMessageToPlayer(playerTwo.getUuid(), message, true);
             }
 
             if (timeRemaining == 0) {
                 endMatch();
             }
         } else if (gameState == GameState.FAILED) {
-            Messages.BATTLE_CANCELLED.sendTo(playerOne.getName());
-            Messages.BATTLE_CANCELLED.sendTo(playerTwo.getName());
+            Messages.BATTLE_CANCELLED.sendTo(playerOne.getUuid());
+            Messages.BATTLE_CANCELLED.sendTo(playerTwo.getUuid());
             oneBackLocation.warpPlayer(playerOne.getName(), true);
             twoBackLocation.warpPlayer(playerTwo.getName(), true);
             setCancelled(true);
@@ -273,8 +273,8 @@ public class TwoPlayerGame extends Game {
 
     public void teleportBothToLobby () {
         gameState = GameState.IN_LOBBY;
-        PlayerManager.getInstance().savePlayerLocationAndTeleport(playerOne.getName(), true);
-        PlayerManager.getInstance().savePlayerLocationAndTeleport(playerTwo.getName(), true);
+        PlayerManager.getInstance().savePlayerLocationAndTeleport(playerOne.getUuid(), true);
+        PlayerManager.getInstance().savePlayerLocationAndTeleport(playerTwo.getUuid(), true);
     }
 
     public void teleportPlayerOneToLobby () {

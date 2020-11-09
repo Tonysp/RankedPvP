@@ -244,6 +244,7 @@ public class GameManager implements Listener {
         result.teamTwoPreD = player2OldDeviation;
         result.teamOnePostD = player1NewRating.getStandardDeviation();
         result.teamTwoPostD = player2NewRating.getStandardDeviation();
+        result.calculateMatchQuality();
         player1.getId().addMatchToHistory(result);
         player2.getId().addMatchToHistory(result);
         Database.getInstance().insertMatchResult(result);
@@ -327,8 +328,8 @@ public class GameManager implements Listener {
         final String winnerMessageFinal = winnerMessage;
         final String loserMessageFinal = loserMessage;
         Bukkit.getScheduler().scheduleSyncDelayedTask(RankedPvP.getInstance(), () -> {
-            PlayerManager.getInstance().sendMessageToPlayer(winner.getId().getName(), winnerMessageFinal, true);
-            PlayerManager.getInstance().sendMessageToPlayer(loser.getId().getName(), loserMessageFinal, true);
+            PlayerManager.getInstance().sendMessageToPlayer(winner.getId().getUuid(), winnerMessageFinal, true);
+            PlayerManager.getInstance().sendMessageToPlayer(loser.getId().getUuid(), loserMessageFinal, true);
         }, 60);
 
 
@@ -349,20 +350,20 @@ public class GameManager implements Listener {
         return waitingForAccept;
     }
 
-    public void tryAcceptingGame (String playerName) {
+    public void tryAcceptingGame (UUID uuid) {
         if (!RankedPvP.IS_MASTER) {
             DataPacket.newBuilder()
                     .addReceiver(RankedPvP.MASTER_ID)
                     .action(Action.GAME_ACCEPT)
-                    .string(playerName)
+                    .uuid(uuid)
                     .buildPacket()
                     .send();
             return;
         }
 
-        ArenaPlayer arenaPlayer = PlayerManager.getInstance().getOrCreatePlayer(playerName);
+        ArenaPlayer arenaPlayer = PlayerManager.getInstance().getOrCreatePlayer(uuid);
         if (!waitingForAccept.containsKey(arenaPlayer)) {
-            Messages.NOT_PART_OF_GAME.sendTo(playerName);
+            Messages.NOT_PART_OF_GAME.sendTo(uuid);
             return;
         }
 
@@ -376,7 +377,7 @@ public class GameManager implements Listener {
             game.twoAccepted = true;
         }
         if (waitingForAccept.containsKey(other)) {
-            PlayerManager.getInstance().sendMessageToPlayer(arenaPlayer.getName(), messageIfOtherDidntAccept, true);
+            PlayerManager.getInstance().sendMessageToPlayer(arenaPlayer.getUuid(), messageIfOtherDidntAccept, true);
         } else {
             inProgress.put(game.playerOne, game);
             inProgress.put(game.playerTwo, game);
@@ -384,66 +385,66 @@ public class GameManager implements Listener {
         }
     }
 
-    public void toggleJoin (String playerName, EventType eventType) {
-        ArenaPlayer arenaPlayer = PlayerManager.getInstance().getOrCreatePlayer(playerName);
+    public void toggleJoin (UUID uuid, EventType eventType) {
+        ArenaPlayer arenaPlayer = PlayerManager.getInstance().getOrCreatePlayer(uuid);
 
         if (playerQueue.get(eventType).contains(arenaPlayer)) {
-            tryLeavingQueue(playerName, eventType);
+            tryLeavingQueue(uuid, eventType);
         } else {
-            tryJoiningQueue(playerName, eventType);
+            tryJoiningQueue(uuid, eventType);
         }
     }
 
-    public void tryLeavingQueue (String playerName, EventType eventType) {
+    public void tryLeavingQueue (UUID uuid, EventType eventType) {
         if (!RankedPvP.IS_MASTER) {
             DataPacket.newBuilder()
                     .addReceiver(RankedPvP.MASTER_ID)
                     .action(Action.PLAYER_ARENA_LEAVE)
-                    .string(playerName)
-                    .string2(eventType.toString())
+                    .uuid(uuid)
+                    .string(eventType.toString())
                     .buildPacket()
                     .send();
             return;
         }
 
-        ArenaPlayer arenaPlayer = PlayerManager.getInstance().getOrCreatePlayer(playerName);
+        ArenaPlayer arenaPlayer = PlayerManager.getInstance().getOrCreatePlayer(uuid);
 
         if (!playerQueue.get(eventType).contains(arenaPlayer)) {
-            Messages.NOT_IN_QUEUE.sendTo(arenaPlayer.getName());
+            Messages.NOT_IN_QUEUE.sendTo(arenaPlayer.getUuid());
             return;
         }
 
         playerQueue.get(eventType).remove(arenaPlayer);
 
-        Messages.LEFT_QUEUE.sendTo(arenaPlayer.getName());
+        Messages.LEFT_QUEUE.sendTo(arenaPlayer.getUuid());
     }
 
 
-    public void tryJoiningQueue (String playerName, EventType eventType) {
+    public void tryJoiningQueue (UUID uuid, EventType eventType) {
         if (!RankedPvP.IS_MASTER) {
             DataPacket.newBuilder()
                     .addReceiver(RankedPvP.MASTER_ID)
                     .action(Action.PLAYER_ARENA_JOIN)
-                    .string(playerName)
-                    .string2(eventType.toString())
+                    .uuid(uuid)
+                    .string(eventType.toString())
                     .buildPacket()
                     .send();
             return;
         }
 
-        ArenaPlayer arenaPlayer = PlayerManager.getInstance().getOrCreatePlayer(playerName);
+        ArenaPlayer arenaPlayer = PlayerManager.getInstance().getOrCreatePlayer(uuid);
 
         if (waitingForAccept.containsKey(arenaPlayer) || inProgress.containsKey(arenaPlayer)) {
             return;
         }
 
         if (playerQueue.get(eventType).contains(arenaPlayer)) {
-            Messages.ALREADY_WAITING.sendTo(arenaPlayer.getName(), "%EVENT%:" + eventType.getNiceName());
+            Messages.ALREADY_WAITING.sendTo(arenaPlayer.getUuid(), "%EVENT%:" + eventType.getNiceName());
             return;
         }
 
         if (eventType.isOnCooldown(arenaPlayer)) {
-            Messages.COOLDOWN.sendTo(arenaPlayer.getName(), "%TIME%:" + Utils.minutesString(eventType.getCooldown(arenaPlayer)));
+            Messages.COOLDOWN.sendTo(arenaPlayer.getUuid(), "%TIME%:" + Utils.minutesString(eventType.getCooldown(arenaPlayer)));
             return;
         }
 
@@ -451,12 +452,12 @@ public class GameManager implements Listener {
         playerQueue.get(eventType).add(arenaPlayer);
         checkQueue.put(eventType, QUEUE_CHECK_DELAY);
 
-        Messages.WAIT_FOR_OPPONENT.sendTo(arenaPlayer.getName());
+        Messages.WAIT_FOR_OPPONENT.sendTo(arenaPlayer.getUuid());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerDeathEvent (PlayerDeathEvent event) {
-        Optional<ArenaPlayer> player = PlayerManager.getInstance().getPlayerIfExists(event.getEntity().getName());
+        Optional<ArenaPlayer> player = PlayerManager.getInstance().getPlayerIfExists(event.getEntity().getUniqueId());
         if (!player.isPresent()
                 || !inProgress.containsKey(player.get())) {
             return;
@@ -470,7 +471,7 @@ public class GameManager implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDamageEvent (EntityDamageEvent event) {
-        Optional<ArenaPlayer> player = PlayerManager.getInstance().getPlayerIfExists(event.getEntity().getName());
+        Optional<ArenaPlayer> player = PlayerManager.getInstance().getPlayerIfExists(event.getEntity().getUniqueId());
         if (!player.isPresent()) {
             return;
         }
@@ -492,8 +493,8 @@ public class GameManager implements Listener {
         if (!(event.getDamager() instanceof org.bukkit.entity.Player) || !(event.getEntity() instanceof org.bukkit.entity.Player)) {
             return;
         }
-        Optional<ArenaPlayer> player1 = PlayerManager.getInstance().getPlayerIfExists(event.getDamager().getName());
-        Optional<ArenaPlayer> player2 = PlayerManager.getInstance().getPlayerIfExists(event.getEntity().getName());
+        Optional<ArenaPlayer> player1 = PlayerManager.getInstance().getPlayerIfExists(event.getDamager().getUniqueId());
+        Optional<ArenaPlayer> player2 = PlayerManager.getInstance().getPlayerIfExists(event.getEntity().getUniqueId());
 
         if (player1.isPresent() && inProgress.containsKey(player1.get())) {
             if (!player2.isPresent() || !inProgress.containsKey(player2.get()) || !inProgress.get(player1.get()).equals(inProgress.get(player2.get()))) {
@@ -508,7 +509,7 @@ public class GameManager implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerInteractEvent (PlayerInteractEvent event) {
-        Optional<ArenaPlayer> player = PlayerManager.getInstance().getPlayerIfExists(event.getPlayer().getName());
+        Optional<ArenaPlayer> player = PlayerManager.getInstance().getPlayerIfExists(event.getPlayer().getUniqueId());
         if (!player.isPresent() || !inProgress.containsKey(player.get()))
             return;
 
@@ -519,7 +520,7 @@ public class GameManager implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDropItemEvent (PlayerDropItemEvent event) {
-        Optional<ArenaPlayer> player = PlayerManager.getInstance().getPlayerIfExists(event.getPlayer().getName());
+        Optional<ArenaPlayer> player = PlayerManager.getInstance().getPlayerIfExists(event.getPlayer().getUniqueId());
         if (!player.isPresent() || !inProgress.containsKey(player.get()))
             return;
 

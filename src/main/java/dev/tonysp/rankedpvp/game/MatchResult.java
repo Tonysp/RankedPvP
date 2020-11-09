@@ -51,6 +51,7 @@ public class MatchResult implements Serializable {
     public double teamTwoPreD;
     public double teamOnePostD;
     public double teamTwoPostD;
+    public double quality;
 
     public double calculateMatchQuality () {
         GameInfo gameInfo = Game.defaultGameInfo();
@@ -59,7 +60,8 @@ public class MatchResult implements Serializable {
         Team t0 = new Team(p0, new Rating(teamOnePreR, teamOnePreD));
         Team t1 = new Team(p1, new Rating(teamTwoPreR, teamTwoPreD));
         TwoPlayerTrueSkillCalculator calculator = new TwoPlayerTrueSkillCalculator();
-        return calculator.calculateMatchQuality(gameInfo, Team.concat(t0, t1));
+        this.quality = calculator.calculateMatchQuality(gameInfo, Team.concat(t0, t1));
+        return quality;
     }
 
     public boolean isDraw () {

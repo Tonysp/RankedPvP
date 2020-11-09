@@ -51,7 +51,7 @@ public class PlayerCommandPreprocessListener implements Listener {
         if(player.isOp())
             return;
 
-        Optional<ArenaPlayer> arenaPlayer = PlayerManager.getInstance().getPlayerIfExists(player.getName());
+        Optional<ArenaPlayer> arenaPlayer = PlayerManager.getInstance().getPlayerIfExists(player.getUniqueId());
         if (!arenaPlayer.isPresent())
             return;
 

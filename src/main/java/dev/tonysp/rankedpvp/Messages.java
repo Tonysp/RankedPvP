@@ -30,6 +30,8 @@ import dev.tonysp.rankedpvp.players.PlayerManager;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 
+import java.util.UUID;
+
 public enum Messages {
     PREFIX,
     WIN_MESSAGE,
@@ -99,20 +101,20 @@ public enum Messages {
         }
     }
 
-    public void sendTo (String playerName) {
+    public void sendTo (UUID playerUuid) {
         if (!isMessageSet || getMessage().equalsIgnoreCase("")) return;
 
         String message = PREFIX.getMessage() + getMessage();
-        PlayerManager.getInstance().sendMessageToPlayer(playerName, ChatColor.translateAlternateColorCodes('&', message), true);
+        PlayerManager.getInstance().sendMessageToPlayer(playerUuid, ChatColor.translateAlternateColorCodes('&', message), true);
     }
 
-    public void sendTo (String playerName, String...variables) {
+    public void sendTo (UUID playerUuid, String...variables) {
         if (!isMessageSet || getMessage().equalsIgnoreCase("")) return;
 
         String message = PREFIX.getMessage() + getMessage();
         for (String variable : variables) {
             message = message.replaceAll(variable.split(":")[0], variable.split(":")[1]);
         }
-        PlayerManager.getInstance().sendMessageToPlayer(playerName, ChatColor.translateAlternateColorCodes('&', message), true);
+        PlayerManager.getInstance().sendMessageToPlayer(playerUuid, ChatColor.translateAlternateColorCodes('&', message), true);
     }
 }

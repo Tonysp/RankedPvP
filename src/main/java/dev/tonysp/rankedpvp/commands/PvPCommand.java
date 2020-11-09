@@ -37,7 +37,9 @@ import dev.tonysp.rankedpvp.game.GameManager;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
 import dev.tonysp.rankedpvp.players.EntityWithRating;
 import dev.tonysp.rankedpvp.players.PlayerManager;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -71,6 +73,7 @@ public class PvPCommand implements CommandExecutor {
                 sender.sendMessage(ChatColor.YELLOW + "Usage: /" + usedCommand + " player [name]");
                 return true;
             }
+
             Optional<ArenaPlayer> player = PlayerManager.getInstance().getPlayerIfExists(args[1]);
             if (player.isPresent()) {
                 sender.sendMessage(FANCY_LINE);
@@ -114,48 +117,51 @@ public class PvPCommand implements CommandExecutor {
                 return true;
             }
 
-            GameManager.getInstance().tryJoiningQueue(sender.getName(), eventType.get());
+            org.bukkit.entity.Player player = (org.bukkit.entity.Player) sender;
+            GameManager.getInstance().tryJoiningQueue(player.getUniqueId(), eventType.get());
         } else if (args[0].equalsIgnoreCase("leave")) {
             if (sender instanceof ConsoleCommandSender) {
                 sender.sendMessage(ChatColor.RED + "This command can be only used in game.");
                 return true;
             }
+            org.bukkit.entity.Player player = (org.bukkit.entity.Player) sender;
             if (args.length <= 1) {
-                sender.sendMessage(ChatColor.YELLOW + "Usage: /" + usedCommand + " leave [type]");
+                player.sendMessage(ChatColor.YELLOW + "Usage: /" + usedCommand + " leave [type]");
                 return true;
             }
 
             Optional<EventType> eventType = EventType.fromString(args[1]);
             if (!eventType.isPresent()) {
-                sender.sendMessage(ChatColor.RED + "Wrong type, specify one of these types: 1v1");
+                player.sendMessage(ChatColor.RED + "Wrong type, specify one of these types: 1v1");
                 return true;
             }
 
-            GameManager.getInstance().tryLeavingQueue(sender.getName(), eventType.get());
+            GameManager.getInstance().tryLeavingQueue(player.getUniqueId(), eventType.get());
         } else if (args[0].equalsIgnoreCase("togglejoin")) {
             if (sender instanceof ConsoleCommandSender) {
                 sender.sendMessage(ChatColor.RED + "This command can be only used in game.");
                 return true;
             }
+            org.bukkit.entity.Player player = (org.bukkit.entity.Player) sender;
             if (args.length <= 1) {
-                sender.sendMessage(ChatColor.YELLOW + "Usage: /" + usedCommand + " togglejoin [type]");
+                player.sendMessage(ChatColor.YELLOW + "Usage: /" + usedCommand + " togglejoin [type]");
                 return true;
             }
 
             Optional<EventType> eventType = EventType.fromString(args[1]);
             if (!eventType.isPresent()) {
-                sender.sendMessage(ChatColor.RED + "Wrong type, specify one of these types: 1v1");
+                player.sendMessage(ChatColor.RED + "Wrong type, specify one of these types: 1v1");
                 return true;
             }
 
-            GameManager.getInstance().toggleJoin(sender.getName(), eventType.get());
+            GameManager.getInstance().toggleJoin(player.getUniqueId(), eventType.get());
         } else if (args[0].equalsIgnoreCase("accept")) {
             if (sender instanceof ConsoleCommandSender) {
                 sender.sendMessage(ChatColor.RED + "This command can be only used in game.");
                 return true;
             }
-
-            GameManager.getInstance().tryAcceptingGame(sender.getName());
+            org.bukkit.entity.Player player = (org.bukkit.entity.Player) sender;
+            GameManager.getInstance().tryAcceptingGame(player.getUniqueId());
         } else if (args[0].equalsIgnoreCase("matchquality")) {
             if (sender instanceof ConsoleCommandSender) {
                 sender.sendMessage(ChatColor.RED + "This command can be only used in game.");

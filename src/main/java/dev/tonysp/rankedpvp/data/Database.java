@@ -43,6 +43,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.UUID;
 
 public class Database {
 
@@ -82,11 +83,11 @@ public class Database {
     public void initializeTables(){
         TABLE_PREFIX = RankedPvP.getInstance().getConfig().getString("mysql.table-prefix", "rankedpvp_");
         try (Connection connection = getConnection()) {
-            PreparedStatement sql = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `" + TABLE_PREFIX + "players` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT,`name` varchar(16) NOT NULL,`rating` double NOT NULL,`deviation` double NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;");
+            PreparedStatement sql = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `" + TABLE_PREFIX + "players` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT,`name` varchar(16) NOT NULL,`uuid` varchar(36) NOT NULL,`rating` double NOT NULL,`deviation` double NOT NULL,`visible_rating` double NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;");
             sql.executeUpdate();
             sql.close();
 
-            sql = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `" + TABLE_PREFIX + "matches` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT,`team-one` int(10) unsigned NOT NULL,`team-two` int(10) unsigned NOT NULL,`winner-team` int(10),`arena` varchar(30) NOT NULL,`event-type` varchar(20) NOT NULL,`datetime` datetime,`team-one-pre-rating` double NOT NULL,`team-two-pre-rating` double NOT NULL,`team-one-post-rating` double NOT NULL,`team-two-post-rating` double NOT NULL,`team-one-pre-deviation` double NOT NULL,`team-two-pre-deviation` double NOT NULL,`team-one-post-deviation` double NOT NULL,`team-two-post-deviation` double NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;");
+            sql = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `" + TABLE_PREFIX + "matches` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT,`team-one` int(10) unsigned NOT NULL,`team-two` int(10) unsigned NOT NULL,`winner-team` int(10),`arena` varchar(30) NOT NULL,`event-type` varchar(20) NOT NULL,`datetime` datetime,`team-one-pre-rating` double NOT NULL,`team-two-pre-rating` double NOT NULL,`team-one-post-rating` double NOT NULL,`team-two-post-rating` double NOT NULL,`team-one-pre-deviation` double NOT NULL,`team-two-pre-deviation` double NOT NULL,`team-one-post-deviation` double NOT NULL,`team-two-post-deviation` double NOT NULL,`quality` double NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;");
             sql.executeUpdate();
             sql.close();
         } catch (Exception e) {
@@ -94,16 +95,17 @@ public class Database {
         }
     }
 
-    public HashMap<String, ArenaPlayer> loadPlayers() {
-        HashMap<String, ArenaPlayer> players = new HashMap<>();
+    public HashMap<UUID, ArenaPlayer> loadPlayers() {
+        HashMap<UUID, ArenaPlayer> players = new HashMap<>();
         try (Connection connection = getConnection();
              PreparedStatement sql = connection.prepareStatement("SELECT * FROM " + TABLE_PREFIX + "players;");
              ResultSet resultSet = sql.executeQuery();
         ) {
             while (resultSet.next()) {
-                ArenaPlayer player = new ArenaPlayer(resultSet.getString("name"), resultSet.getDouble("rating"), resultSet.getDouble("deviation"));
+                UUID uuid = UUID.fromString(resultSet.getString("uuid"));
+                ArenaPlayer player = new ArenaPlayer(uuid, resultSet.getDouble("rating"), resultSet.getDouble("deviation"));
                 player.setId(resultSet.getInt("id"));
-                players.put(player.getName().toLowerCase(), player);
+                players.put(uuid, player);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -134,6 +136,7 @@ public class Database {
                 matchResult.teamTwoPreD = resultSet.getDouble("team-two-pre-deviation");
                 matchResult.teamOnePostD = resultSet.getDouble("team-one-post-deviation");
                 matchResult.teamTwoPostD = resultSet.getDouble("team-two-post-deviation");
+                matchResult.quality = resultSet.getDouble("quality");
                 matches.add(matchResult);
             }
         } catch (Exception e) {
@@ -146,11 +149,13 @@ public class Database {
     public void insertPlayer (ArenaPlayer player){
         Bukkit.getScheduler().runTask(RankedPvP.getInstance(), () -> {
             try (Connection connection = getConnection();
-                 PreparedStatement sql = connection.prepareStatement("INSERT INTO " + TABLE_PREFIX + "players (name, rating, deviation) VALUES (?,?,?);", Statement.RETURN_GENERATED_KEYS);
+                 PreparedStatement sql = connection.prepareStatement("INSERT INTO " + TABLE_PREFIX + "players (name, uuid, rating, deviation, visible_rating) VALUES (?,?,?,?,?);", Statement.RETURN_GENERATED_KEYS);
             ) {
                 sql.setString(1, player.getName());
-                sql.setDouble(2, player.getRating());
-                sql.setDouble(3, player.getDeviation());
+                sql.setString(2, player.getUuid().toString());
+                sql.setDouble(3, player.getRating());
+                sql.setDouble(4, player.getDeviation());
+                sql.setDouble(5, player.getRatingVisible());
                 sql.executeUpdate();
 
                 ResultSet res = sql.getGeneratedKeys();
@@ -235,7 +240,7 @@ public class Database {
     public void insertMatchResult (MatchResult result){
         Bukkit.getScheduler().runTask(RankedPvP.getInstance(), () -> {
             try (Connection connection = getConnection();
-                 PreparedStatement sql = connection.prepareStatement("INSERT INTO `" + TABLE_PREFIX + "matches`(`team-one`, `team-two`, `winner-team`, `arena`, `event-type`, `datetime`, `team-one-pre-rating`, `team-two-pre-rating`, `team-one-post-rating`, `team-two-post-rating`, `team-one-pre-deviation`, `team-two-pre-deviation`, `team-one-post-deviation`, `team-two-post-deviation`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?);");
+                 PreparedStatement sql = connection.prepareStatement("INSERT INTO `" + TABLE_PREFIX + "matches`(`team-one`, `team-two`, `winner-team`, `arena`, `event-type`, `datetime`, `team-one-pre-rating`, `team-two-pre-rating`, `team-one-post-rating`, `team-two-post-rating`, `team-one-pre-deviation`, `team-two-pre-deviation`, `team-one-post-deviation`, `team-two-post-deviation`, `quality`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);");
             ) {
                 sql.setInt(1, result.teamOne);
                 sql.setInt(2, result.teamTwo);
@@ -251,6 +256,7 @@ public class Database {
                 sql.setDouble(12, result.teamTwoPreD);
                 sql.setDouble(13, result.teamOnePostD);
                 sql.setDouble(14, result.teamTwoPostD);
+                sql.setDouble(15, result.quality);
                 sql.executeUpdate();
             }catch (Exception e){
                 e.printStackTrace();
@@ -261,12 +267,14 @@ public class Database {
     public void updatePlayer (ArenaPlayer player){
         Bukkit.getScheduler().runTask(RankedPvP.getInstance(), () -> {
             try (Connection connection = getConnection();
-                 PreparedStatement sql = connection.prepareStatement("UPDATE " + TABLE_PREFIX + "players SET name=?,rating=?,deviation=? WHERE id=?;");
+                 PreparedStatement sql = connection.prepareStatement("UPDATE " + TABLE_PREFIX + "players SET name=?,uuid=?,rating=?,deviation=?,visible_rating=? WHERE id=?;");
             ) {
                 sql.setString(1, player.getName());
-                sql.setDouble(2, player.getRating());
-                sql.setDouble(3, player.getDeviation());
-                sql.setInt(4, player.getId());
+                sql.setString(2, player.getUuid().toString());
+                sql.setDouble(3, player.getRating());
+                sql.setDouble(4, player.getDeviation());
+                sql.setDouble(5, player.getRatingVisible());
+                sql.setInt(6, player.getId());
                 sql.executeUpdate();
             } catch (Exception e){
                 e.printStackTrace();

@@ -31,6 +31,7 @@ import com.google.common.io.ByteStreams;
 import dev.tonysp.rankedpvp.Messages;
 import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.Utils;
+import dev.tonysp.rankedpvp.arenas.Arena;
 import dev.tonysp.rankedpvp.arenas.Warp;
 import dev.tonysp.rankedpvp.data.Action;
 import dev.tonysp.rankedpvp.data.DataPacket;
@@ -62,7 +63,8 @@ public class PlayerManager implements Listener {
     private static PlayerManager instance;
 
     private Map<Integer, ArenaPlayer> playersById = new HashMap<>();
-    private Map<String, ArenaPlayer> players = new HashMap<>();
+    private Map<String, ArenaPlayer> playersByName = new HashMap<>();
+    private Map<UUID, ArenaPlayer> players = new HashMap<>();
     private Map<String, Warp> playersToWarp = new HashMap<>();
     private TreeSet<ArenaPlayer> topPlayersCache = new TreeSet<>();
 
@@ -91,6 +93,7 @@ public class PlayerManager implements Listener {
             players = Database.getInstance().loadPlayers();
             for (ArenaPlayer arenaPlayer : players.values()) {
                 playersById.put(arenaPlayer.getId(), arenaPlayer);
+                playersByName.put(arenaPlayer.getName().toLowerCase(), arenaPlayer);
             }
         }
 
@@ -162,13 +165,13 @@ public class PlayerManager implements Listener {
         }
     }
 
-    public void savePlayerLocationAndTeleport (String playerName, boolean share) {
-        Player player = Bukkit.getPlayer(playerName);
+    public void savePlayerLocationAndTeleport (UUID uuid, boolean share) {
+        Player player = Bukkit.getPlayer(uuid);
         if (player == null || !player.isOnline()) {
             if (share && DataPacketProcessor.getInstance().isCrossServerEnabled()) {
                 DataPacket.newBuilder()
                         .action(Action.SAVE_PLAYER_LOCATION_AND_TP)
-                        .string(playerName)
+                        .uuid(uuid)
                         .buildPacket()
                         .send();
             }
@@ -176,7 +179,7 @@ public class PlayerManager implements Listener {
         }
 
         if (RankedPvP.IS_MASTER) {
-            ArenaPlayer arenaPlayer = getOrCreatePlayer(playerName);
+            ArenaPlayer arenaPlayer = getOrCreatePlayer(uuid);
             if (!GameManager.getInstance().getInProgress().containsKey(arenaPlayer))
                 return;
 
@@ -192,7 +195,7 @@ public class PlayerManager implements Listener {
             DataPacket.newBuilder()
                     .addReceiver(RankedPvP.MASTER_ID)
                     .action(Action.PLAYER_LOCATION)
-                    .string(playerName)
+                    .uuid(uuid)
                     .warp(Warp.fromLocation(player.getLocation()))
                     .buildPacket()
                     .send();
@@ -204,7 +207,7 @@ public class PlayerManager implements Listener {
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player.getName().equalsIgnoreCase(except1) || player.getName().equalsIgnoreCase(except2))
                 continue;
-            sendMessageToPlayer(player.getName(), message, false);
+            sendMessageToPlayer(player.getUniqueId(), message, false);
         }
 
         if (share && DataPacketProcessor.getInstance().isCrossServerEnabled()) {
@@ -224,8 +227,8 @@ public class PlayerManager implements Listener {
         announce(message, "", "", share);
     }
 
-    public void sendMessageToPlayer (String playerName, String message, boolean share) {
-        Player player = Bukkit.getPlayer(playerName);
+    public void sendMessageToPlayer (UUID playerUuid, String message, boolean share) {
+        Player player = Bukkit.getPlayer(playerUuid);
         if (player != null && player.isOnline()) {
             player.sendMessage(message);
             return;
@@ -234,19 +237,18 @@ public class PlayerManager implements Listener {
         if (share && DataPacketProcessor.getInstance().isCrossServerEnabled()) {
             DataPacket.newBuilder()
                     .action(Action.PLAYER_MESSAGE)
-                    .string(playerName)
-                    .string2(message)
+                    .uuid(playerUuid)
+                    .string(message)
                     .buildPacket()
                     .send();
         }
     }
 
-    public ArenaPlayer getOrCreatePlayer (String name) {
-        String nameLower = name.toLowerCase();
-        if (players.containsKey(nameLower)) {
-            return players.get(nameLower);
+    public ArenaPlayer getOrCreatePlayer (UUID uuid) {
+        if (players.containsKey(uuid)) {
+            return players.get(uuid);
         } else {
-            return createPlayer(name);
+            return createPlayer(uuid);
         }
     }
 
@@ -277,24 +279,33 @@ public class PlayerManager implements Listener {
     public void processData (DataPacket data) {
         ArenaPlayer arenaPlayer = data.getPlayer();
         playersById.put(arenaPlayer.getId(), arenaPlayer);
-        players.put(arenaPlayer.getName().toLowerCase(), arenaPlayer);
+        players.put(arenaPlayer.getUuid(), arenaPlayer);
+        playersByName.put(arenaPlayer.getName().toLowerCase(), arenaPlayer);
     }
 
-    private ArenaPlayer createPlayer (String name) {
-        ArenaPlayer player = new ArenaPlayer(name);
+    private ArenaPlayer createPlayer (UUID uuid) {
+        ArenaPlayer player = new ArenaPlayer(uuid);
         if (RankedPvP.IS_MASTER) {
             Database.getInstance().insertPlayer(player);
         }
-        String nameLower = name.toLowerCase();
         playersById.put(player.getId(), player);
-        players.put(nameLower, player);
+        players.put(uuid, player);
+        playersByName.put(player.getName().toLowerCase(), player);
 
         return player;
     }
 
     public Optional<ArenaPlayer> getPlayerIfExists (String name) {
-        if (players.containsKey(name.toLowerCase())) {
-            return Optional.of(players.get(name.toLowerCase()));
+        if (playersByName.containsKey(name.toLowerCase())) {
+            return Optional.of(playersByName.get(name.toLowerCase()));
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<ArenaPlayer> getPlayerIfExists (UUID uuid) {
+        if (players.containsKey(uuid)) {
+            return Optional.of(players.get(uuid));
         } else {
             return Optional.empty();
         }
@@ -345,6 +356,19 @@ public class PlayerManager implements Listener {
         return ranksEnabled;
     }
 
+    public void updatePlayerName (Player player) {
+        Optional<ArenaPlayer> arenaPlayer = getPlayerIfExists(player.getUniqueId());
+        if (!arenaPlayer.isPresent())
+            return;
+
+        if (!arenaPlayer.get().getName().equals(player.getName())) {
+            playersByName.remove(arenaPlayer.get().getName().toLowerCase());
+            playersByName.put(player.getName().toLowerCase(), arenaPlayer.get());
+            arenaPlayer.get().setName(player.getName());
+            Database.getInstance().updatePlayer(arenaPlayer.get());
+        }
+    }
+
     public void switchServer (Player player, String destinationServer) {
         final ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF("Connect");
@@ -354,12 +378,14 @@ public class PlayerManager implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerJoinEvent (PlayerJoinEvent event) {
+        updatePlayerName(event.getPlayer());
+
         String playerName = event.getPlayer().getName();
         if (playersToWarp.containsKey(playerName)) {
             playersToWarp.get(playerName).warpPlayer(playerName, false);
             playersToWarp.remove(playerName);
         } else {
-            Optional<ArenaPlayer> player = PlayerManager.getInstance().getPlayerIfExists(event.getPlayer().getName());
+            Optional<ArenaPlayer> player = PlayerManager.getInstance().getPlayerIfExists(event.getPlayer().getUniqueId());
             if (!player.isPresent() || !GameManager.getInstance().getInProgress().containsKey(player.get()))
                 return;
 
@@ -384,7 +410,7 @@ public class PlayerManager implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerQuitEvent (PlayerQuitEvent event) {
-        Optional<ArenaPlayer> player = PlayerManager.getInstance().getPlayerIfExists(event.getPlayer().getName());
+        Optional<ArenaPlayer> player = PlayerManager.getInstance().getPlayerIfExists(event.getPlayer().getUniqueId());
         if (!player.isPresent() || !GameManager.getInstance().getInProgress().containsKey(player.get()))
             return;
 

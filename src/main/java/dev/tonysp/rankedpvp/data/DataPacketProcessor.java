@@ -85,7 +85,7 @@ public class DataPacketProcessor implements Listener {
         redisConnection.test();
 
         // Initialize DataPacketManager
-        serverId = UUID.randomUUID().toString();
+        serverId = config.getString("cross-server-settings.bungeecord-server-name", "");
         dataPacketManager = new DataPacketManager(RankedPvP.getInstance(), redisConnection, "RankedPvP", serverId, DataPacketManager.DEFAULT_PACKET_SEND_RECEIVE_INTERVAL, DataPacketManager.DEFAULT_CLEAR_OLD_PACKETS);
 
         RankedPvP.getInstance().getServer().getPluginManager().registerEvents(this, RankedPvP.getInstance());
@@ -139,28 +139,28 @@ public class DataPacketProcessor implements Listener {
                     PlayerManager.getInstance().processData(dataPacket);
                     break;
                 case PLAYER_ARENA_JOIN:
-                    GameManager.getInstance().tryJoiningQueue(dataPacket.getString(), EventType.valueOf(dataPacket.getString2().toUpperCase()));
+                    GameManager.getInstance().tryJoiningQueue(dataPacket.getUuid(), EventType.valueOf(dataPacket.getString().toUpperCase()));
                     break;
                 case PLAYER_ARENA_LEAVE:
-                    GameManager.getInstance().tryLeavingQueue(dataPacket.getString(), EventType.valueOf(dataPacket.getString2().toUpperCase()));
+                    GameManager.getInstance().tryLeavingQueue(dataPacket.getUuid(), EventType.valueOf(dataPacket.getString().toUpperCase()));
                     break;
                 case GAME_ACCEPT_REMINDER:
                     PlayerManager.getInstance().sendAcceptMessageToPlayer(dataPacket.getString(), dataPacket.getInteger(), false);
                     break;
                 case PLAYER_MESSAGE:
-                    PlayerManager.getInstance().sendMessageToPlayer(dataPacket.getString(), dataPacket.getString2(), false);
+                    PlayerManager.getInstance().sendMessageToPlayer(dataPacket.getUuid(), dataPacket.getString(), false);
                     break;
                 case SAVE_PLAYER_LOCATION_AND_TP:
-                    PlayerManager.getInstance().savePlayerLocationAndTeleport(dataPacket.getString(), false);
+                    PlayerManager.getInstance().savePlayerLocationAndTeleport(dataPacket.getUuid(), false);
                     break;
                 case GAME_ACCEPT:
-                    GameManager.getInstance().tryAcceptingGame(dataPacket.getString());
+                    GameManager.getInstance().tryAcceptingGame(dataPacket.getUuid());
                     break;
                 case ANNOUNCE:
                     PlayerManager.getInstance().announce(dataPacket.getString(), dataPacket.getStringList().get(0), dataPacket.getStringList().get(1), false);
                     break;
                 case PLAYER_LOCATION:
-                    ArenaPlayer arenaPlayer = PlayerManager.getInstance().getOrCreatePlayer(dataPacket.getString());
+                    ArenaPlayer arenaPlayer = PlayerManager.getInstance().getOrCreatePlayer(dataPacket.getUuid());
                     if (!GameManager.getInstance().getInProgress().containsKey(arenaPlayer))
                         return;
 

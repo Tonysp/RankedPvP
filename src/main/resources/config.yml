@@ -3,6 +3,8 @@ cross-server-settings:
   enabled: false
   # Only one server should be master. All the arenas must be on the master server.
   master: true
+  # This needs to exactly match the name of the server in BungeeCord config.
+  bungeecord-server-name: "server0"
   redis-ip: "127.0.0.1"
   redis-port: 6379
   redis-password: ''
