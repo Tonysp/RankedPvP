@@ -70,6 +70,7 @@ public class Database {
             mysqlConnection = new MysqlConnection(connectionName, url, username, password);
         } catch (Exception exception) {
             RankedPvP.logWarning("Error while initializing MySQL connection!");
+            exception.printStackTrace();
             return;
         }
         RankedPvP.log("Initialized MySQL connection.");

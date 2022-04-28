@@ -96,8 +96,8 @@ public class RankedPvP extends JavaPlugin {
         try {
             new YamlConfiguration().load(new File(getDataFolder() + File.separator + "config.yml"));
         } catch (Exception e) {
-            System.out.println("There was a problem loading the config. More details bellow.");
-            System.out.println("-----------------------------------------------");
+            getLogger().log(Level.SEVERE, "There was a problem loading the config. More details bellow.");
+            getLogger().log(Level.SEVERE, "-----------------------------------------------");
             e.printStackTrace();
             Bukkit.getPluginManager().disablePlugin(this);
             return;

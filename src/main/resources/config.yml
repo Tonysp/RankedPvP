@@ -42,8 +42,8 @@ arenas:
       - "125,25,123,world,acacia_log"
     # Multiple warps can be configured per team, one will be picked at random.
     team-one-warps:
-      - "125,25,123,world"
-      - "125,25,123,world"
+      - "125,25,123,0,0,world"
+      - "125,25,123,0,0,world"
     team-two-warps:
       - "125,25,123,20.5,15.1,world"
       - "125,25,123,20.5,15.1,world"
