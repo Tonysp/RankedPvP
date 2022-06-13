@@ -2,7 +2,7 @@
  *
  *  * This file is part of RankedPvP, licensed under the MIT License.
  *  *
- *  *  Copyright (c) 2020 Antonín Sůva
+ *  *  Copyright (c) 2022 Antonín Sůva
  *  *
  *  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  *  of this software and associated documentation files (the "Software"), to deal
@@ -26,8 +26,8 @@
 
 package dev.tonysp.rankedpvp;
 
-import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 
@@ -38,14 +38,22 @@ import java.util.regex.Pattern;
 
 public class Utils {
 
-    private static final Pattern hexColorPattern = Pattern.compile("(\\{#[a-fA-F0-9]{6}})");
+    public static String formatString (String text){
+        Pattern pattern = Pattern.compile("#[a-fA-F0-9]{6}");
+        Matcher matcher = pattern.matcher(text);
+        while (matcher.find()) {
+            String hexCode = text.substring(matcher.start(), matcher.end());
+            String replaceSharp = hexCode.replace('#', 'x');
 
-    public static String formatString(String text){
-        Matcher hexColorMatcher = hexColorPattern.matcher(text);
-        while (hexColorMatcher.find()) {
-            text = text.replace(hexColorMatcher.group(1), "" + ChatColor.of(hexColorMatcher.group(1).replace("{", "").replace("}", "")));
+            char[] ch = replaceSharp.toCharArray();
+            StringBuilder builder = new StringBuilder();
+            for (char c : ch) {
+                builder.append("&").append(c);
+            }
+
+            text = text.replace(hexCode, builder.toString());
+            matcher = pattern.matcher(text);
         }
-
         return ChatColor.translateAlternateColorCodes('&', text);
     }
 

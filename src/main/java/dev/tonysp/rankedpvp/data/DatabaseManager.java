@@ -2,7 +2,7 @@
  *
  *  * This file is part of RankedPvP, licensed under the MIT License.
  *  *
- *  *  Copyright (c) 2020 Antonín Sůva
+ *  *  Copyright (c) 2022 Antonín Sůva
  *  *
  *  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  *  of this software and associated documentation files (the "Software"), to deal
@@ -32,34 +32,28 @@ import de.gesundkrank.jskills.Rating;
 import de.gesundkrank.jskills.Team;
 import de.gesundkrank.jskills.trueskill.TwoPlayerTrueSkillCalculator;
 import dev.tonysp.plugindata.connections.mysql.MysqlConnection;
+import dev.tonysp.rankedpvp.Manager;
 import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.game.Game;
 import dev.tonysp.rankedpvp.game.MatchResult;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
-import dev.tonysp.rankedpvp.players.PlayerManager;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
 
-public class Database {
+public class DatabaseManager extends Manager {
 
-    private static Database instance;
-
-    private static String TABLE_PREFIX;
+    private String tablePrefix;
     private MysqlConnection mysqlConnection;
 
-    public static Database getInstance () {
-        if (instance == null) {
-            instance = new Database();
-        }
-        return instance;
+    public DatabaseManager (RankedPvP plugin) {
+        super(plugin);
     }
 
-    private Database () {
+    @Override
+    public boolean load () {
         FileConfiguration config = RankedPvP.getInstance().getConfig();
         String url, username, password;
         url = config.getString("mysql.url", "");
@@ -71,10 +65,18 @@ public class Database {
         } catch (Exception exception) {
             RankedPvP.logWarning("Error while initializing MySQL connection!");
             exception.printStackTrace();
-            return;
+            return false;
         }
         RankedPvP.log("Initialized MySQL connection.");
         mysqlConnection.test();
+
+        return true;
+    }
+
+    @Override
+    public void unload () {
+        if (mysqlConnection != null)
+            mysqlConnection.closeDataSource();
     }
 
     private Connection getConnection () throws SQLException {
@@ -82,13 +84,13 @@ public class Database {
     }
 
     public void initializeTables(){
-        TABLE_PREFIX = RankedPvP.getInstance().getConfig().getString("mysql.table-prefix", "rankedpvp_");
+        tablePrefix = RankedPvP.getInstance().getConfig().getString("mysql.table-prefix", "rankedpvp_");
         try (Connection connection = getConnection()) {
-            PreparedStatement sql = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `" + TABLE_PREFIX + "players` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT,`name` varchar(16) NOT NULL,`uuid` varchar(36) NOT NULL,`rating` double NOT NULL,`deviation` double NOT NULL,`visible_rating` double NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;");
+            PreparedStatement sql = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `" + tablePrefix + "players` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT,`name` varchar(16) NOT NULL,`uuid` varchar(36) NOT NULL,`rating` double NOT NULL,`deviation` double NOT NULL,`visible_rating` double NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;");
             sql.executeUpdate();
             sql.close();
 
-            sql = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `" + TABLE_PREFIX + "matches` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT,`team-one` int(10) unsigned NOT NULL,`team-two` int(10) unsigned NOT NULL,`winner-team` int(10),`arena` varchar(30) NOT NULL,`event-type` varchar(20) NOT NULL,`datetime` datetime,`team-one-pre-rating` double NOT NULL,`team-two-pre-rating` double NOT NULL,`team-one-post-rating` double NOT NULL,`team-two-post-rating` double NOT NULL,`team-one-pre-deviation` double NOT NULL,`team-two-pre-deviation` double NOT NULL,`team-one-post-deviation` double NOT NULL,`team-two-post-deviation` double NOT NULL,`quality` double NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;");
+            sql = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `" + tablePrefix + "matches` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT,`team-one` int(10) unsigned NOT NULL,`team-two` int(10) unsigned NOT NULL,`winner-team` int(10),`arena` varchar(30) NOT NULL,`event-type` varchar(20) NOT NULL,`datetime` datetime,`team-one-pre-rating` double NOT NULL,`team-two-pre-rating` double NOT NULL,`team-one-post-rating` double NOT NULL,`team-two-post-rating` double NOT NULL,`team-one-pre-deviation` double NOT NULL,`team-two-pre-deviation` double NOT NULL,`team-one-post-deviation` double NOT NULL,`team-two-post-deviation` double NOT NULL,`quality` double NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;");
             sql.executeUpdate();
             sql.close();
         } catch (Exception e) {
@@ -96,10 +98,10 @@ public class Database {
         }
     }
 
-    public HashMap<UUID, ArenaPlayer> loadPlayers() {
-        HashMap<UUID, ArenaPlayer> players = new HashMap<>();
+    public boolean loadPlayers(final Map<UUID, ArenaPlayer> players) {
+        players.clear();
         try (Connection connection = getConnection();
-             PreparedStatement sql = connection.prepareStatement("SELECT * FROM " + TABLE_PREFIX + "players;");
+             PreparedStatement sql = connection.prepareStatement("SELECT * FROM " + tablePrefix + "players;");
              ResultSet resultSet = sql.executeQuery();
         ) {
             while (resultSet.next()) {
@@ -110,15 +112,16 @@ public class Database {
             }
         } catch (Exception e) {
             e.printStackTrace();
+            return false;
         }
 
-        return players;
+        return true;
     }
 
     public ArrayList<MatchResult> loadMatchHistory() {
         ArrayList<MatchResult> matches = new ArrayList<>();
         try (Connection connection = getConnection();
-             PreparedStatement sql = connection.prepareStatement("SELECT * FROM " + TABLE_PREFIX + "matches;");
+             PreparedStatement sql = connection.prepareStatement("SELECT * FROM " + tablePrefix + "matches;");
              ResultSet resultSet = sql.executeQuery();
         ) {
             while (resultSet.next()) {
@@ -150,7 +153,7 @@ public class Database {
     public void insertPlayer (ArenaPlayer player){
         Bukkit.getScheduler().runTask(RankedPvP.getInstance(), () -> {
             try (Connection connection = getConnection();
-                 PreparedStatement sql = connection.prepareStatement("INSERT INTO " + TABLE_PREFIX + "players (name, uuid, rating, deviation, visible_rating) VALUES (?,?,?,?,?);", Statement.RETURN_GENERATED_KEYS);
+                 PreparedStatement sql = connection.prepareStatement("INSERT INTO " + tablePrefix + "players (name, uuid, rating, deviation, visible_rating) VALUES (?,?,?,?,?);", Statement.RETURN_GENERATED_KEYS);
             ) {
                 sql.setString(1, player.getName());
                 sql.setString(2, player.getUuid().toString());
@@ -172,7 +175,7 @@ public class Database {
 
     public void showQualities (){
         try (Connection connection = getConnection();
-             PreparedStatement sql = connection.prepareStatement("SELECT * FROM `" + TABLE_PREFIX + "matches`;");
+             PreparedStatement sql = connection.prepareStatement("SELECT * FROM `" + tablePrefix + "matches`;");
         ) {
             ResultSet resultSet = sql.executeQuery();
             GameInfo gameInfo = Game.defaultGameInfo();
@@ -196,7 +199,7 @@ public class Database {
                 RankedPvP.log(quality + "");
                 if (!players.containsKey(i0)) {
                     MatchInfo matchInfo = null;
-                    for (ArenaPlayer player : PlayerManager.getInstance().getPlayers()) {
+                    for (ArenaPlayer player : plugin.players().getPlayers()) {
                         if (player.getId() == i0) {
                             matchInfo = new MatchInfo(player.getName(), player.getRatingRound(), player.getDeviation());
                             break;
@@ -206,7 +209,7 @@ public class Database {
                 }
                 if (!players.containsKey(i1)) {
                     MatchInfo matchInfo = null;
-                    for (ArenaPlayer player : PlayerManager.getInstance().getPlayers()) {
+                    for (ArenaPlayer player : plugin.players().getPlayers()) {
                         if (player.getId() == i1) {
                             matchInfo = new MatchInfo(player.getName(), player.getRatingRound(), player.getDeviation());
                             break;
@@ -241,7 +244,7 @@ public class Database {
     public void insertMatchResult (MatchResult result){
         Bukkit.getScheduler().runTask(RankedPvP.getInstance(), () -> {
             try (Connection connection = getConnection();
-                 PreparedStatement sql = connection.prepareStatement("INSERT INTO `" + TABLE_PREFIX + "matches`(`team-one`, `team-two`, `winner-team`, `arena`, `event-type`, `datetime`, `team-one-pre-rating`, `team-two-pre-rating`, `team-one-post-rating`, `team-two-post-rating`, `team-one-pre-deviation`, `team-two-pre-deviation`, `team-one-post-deviation`, `team-two-post-deviation`, `quality`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);");
+                 PreparedStatement sql = connection.prepareStatement("INSERT INTO `" + tablePrefix + "matches`(`team-one`, `team-two`, `winner-team`, `arena`, `event-type`, `datetime`, `team-one-pre-rating`, `team-two-pre-rating`, `team-one-post-rating`, `team-two-post-rating`, `team-one-pre-deviation`, `team-two-pre-deviation`, `team-one-post-deviation`, `team-two-post-deviation`, `quality`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);");
             ) {
                 sql.setInt(1, result.teamOne);
                 sql.setInt(2, result.teamTwo);
@@ -268,7 +271,7 @@ public class Database {
     public void updatePlayer (ArenaPlayer player){
         Bukkit.getScheduler().runTask(RankedPvP.getInstance(), () -> {
             try (Connection connection = getConnection();
-                 PreparedStatement sql = connection.prepareStatement("UPDATE " + TABLE_PREFIX + "players SET name=?,uuid=?,rating=?,deviation=?,visible_rating=? WHERE id=?;");
+                 PreparedStatement sql = connection.prepareStatement("UPDATE " + tablePrefix + "players SET name=?,uuid=?,rating=?,deviation=?,visible_rating=? WHERE id=?;");
             ) {
                 sql.setString(1, player.getName());
                 sql.setString(2, player.getUuid().toString());

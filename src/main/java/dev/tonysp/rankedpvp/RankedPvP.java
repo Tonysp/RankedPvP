@@ -2,7 +2,7 @@
  *
  *  * This file is part of RankedPvP, licensed under the MIT License.
  *  *
- *  *  Copyright (c) 2020 Antonín Sůva
+ *  *  Copyright (c) 2022 Antonín Sůva
  *  *
  *  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  *  of this software and associated documentation files (the "Software"), to deal
@@ -29,27 +29,27 @@ package dev.tonysp.rankedpvp;
 import dev.tonysp.rankedpvp.arenas.ArenaManager;
 import dev.tonysp.rankedpvp.commands.PlayerCommandPreprocessListener;
 import dev.tonysp.rankedpvp.commands.PvPCommand;
-import dev.tonysp.rankedpvp.data.DataPacketProcessor;
-import dev.tonysp.rankedpvp.data.Database;
+import dev.tonysp.rankedpvp.data.DataPacketManager;
+import dev.tonysp.rankedpvp.data.DatabaseManager;
 import dev.tonysp.rankedpvp.game.EventType;
 import dev.tonysp.rankedpvp.game.GameManager;
 import dev.tonysp.rankedpvp.players.PlayerManager;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 import java.util.logging.Level;
 
 public class RankedPvP extends JavaPlugin {
 
-    public static boolean IS_MASTER = true;
-    public static final String PLUGIN_ID = "rankedpvp";
-    public static String MASTER_ID;
-    public static Set<String> otherServers = new HashSet<>();
+    private final PlayerManager playerManager = new PlayerManager(this);
+    private final GameManager gameManager = new GameManager(this);
+    private final ArenaManager arenaManager = new ArenaManager(this);
+    private final DataPacketManager dataPacketManager = new DataPacketManager(this);
+    private final DatabaseManager databaseManager = new DatabaseManager(this);
 
     public static RankedPvP getInstance () {
         return getPlugin(RankedPvP.class);
@@ -57,20 +57,40 @@ public class RankedPvP extends JavaPlugin {
 
     @Override
     public void onEnable () {
-        loadConfig();
+        enable();
+    }
 
-        Database.getInstance().initializeTables();
+    @Override
+    public void onDisable () {
+        disable();
+    }
+
+    public String enable () {
+        loadConfig();
+        String failed = ChatColor.RED + "Plugin failed to enable, check console!";
+
+        PvPCommand pvpCommand = new PvPCommand(this);
+        Objects.requireNonNull(getCommand("rankedpvp")).setExecutor(pvpCommand);
+        Objects.requireNonNull(getCommand("pvp")).setExecutor(pvpCommand);
+
+        if (!database().load())
+            return failed + " (database)";
+
+        database().initializeTables();
 
         Messages.loadFromConfig(getConfig());
         EventType.loadFromConfig(getConfig());
-        ArenaManager.getInstance();
-        PlayerManager.getInstance();
-        GameManager.getInstance();
+        if (!arenas().load())
+            return failed + " (arenas)";
+        if (!players().load())
+            return failed + " (players)";
+        if (!games().load())
+            return failed + " (games)";
+        if (!dataPackets().load())
+            return failed + " (data packets)";
 
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         new PlayerCommandPreprocessListener();
-
-        Objects.requireNonNull(getCommand("rankedpvp")).setExecutor(new PvPCommand());
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new Placeholders(this).register();
@@ -78,14 +98,21 @@ public class RankedPvP extends JavaPlugin {
         } else {
             log("PlaceholderAPI integration disabled.");
         }
-        DataPacketProcessor.getInstance().shareServerOnline();
-        Database.getInstance();
+        dataPacketManager.shareServerOnline();
+
+        return ChatColor.GREEN + "Plugin enabled!";
     }
 
-    @Override
-    public void onDisable () {
-        GameManager.getInstance().endAllGames();
-        DataPacketProcessor.getInstance().onDisable();
+    public String disable () {
+        gameManager.endAllGames();
+        dataPacketManager.unload();
+
+        players().unload();
+        games().unload();
+        arenas().unload();
+        database().unload();
+
+        return ChatColor.GREEN + "Plugin disabled!";
     }
 
     private void loadConfig () {
@@ -114,7 +141,28 @@ public class RankedPvP extends JavaPlugin {
         Bukkit.getLogger().log(Level.WARNING, "[RankedPvP] " + text);
     }
 
-    public void addServer (String serverId) {
-        otherServers.add(serverId);
+    public static void logDebug (String text) {
+        if (getInstance().getConfig().getBoolean("debug", false))
+            Bukkit.getLogger().log(Level.INFO, "[RankedPvP Debug] " + text);
+    }
+
+    public PlayerManager players () {
+        return playerManager;
+    }
+
+    public GameManager games () {
+        return gameManager;
+    }
+
+    public ArenaManager arenas () {
+        return arenaManager;
+    }
+
+    public DataPacketManager dataPackets () {
+        return dataPacketManager;
+    }
+
+    public DatabaseManager database () {
+        return databaseManager;
     }
 }

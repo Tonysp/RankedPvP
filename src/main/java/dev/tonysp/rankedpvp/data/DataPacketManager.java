@@ -2,7 +2,7 @@
  *
  *  * This file is part of RankedPvP, licensed under the MIT License.
  *  *
- *  *  Copyright (c) 2020 Antonín Sůva
+ *  *  Copyright (c) 2022 Antonín Sůva
  *  *
  *  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  *  of this software and associated documentation files (the "Software"), to deal
@@ -27,45 +27,43 @@
 package dev.tonysp.rankedpvp.data;
 
 import dev.tonysp.plugindata.connections.redis.RedisConnection;
-import dev.tonysp.plugindata.data.DataPacketManager;
 import dev.tonysp.plugindata.data.events.DataPacketReceiveEvent;
+import dev.tonysp.rankedpvp.Manager;
 import dev.tonysp.rankedpvp.RankedPvP;
-import dev.tonysp.rankedpvp.arenas.ArenaManager;
 import dev.tonysp.rankedpvp.arenas.Warp;
 import dev.tonysp.rankedpvp.game.EventType;
-import dev.tonysp.rankedpvp.game.GameManager;
 import dev.tonysp.rankedpvp.game.TwoPlayerGame;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
-import dev.tonysp.rankedpvp.players.PlayerManager;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 
-import java.util.UUID;
+import java.util.HashSet;
+import java.util.Set;
 
-public class DataPacketProcessor implements Listener {
-
-    private static DataPacketProcessor instance;
+public class DataPacketManager extends Manager {
 
     private boolean crossServerEnabled = false;
-    private DataPacketManager dataPacketManager;
-    private String serverId = "";
+    private dev.tonysp.plugindata.data.DataPacketManager dataPacketManager;
 
-    public static DataPacketProcessor getInstance() {
-        if (instance == null) {
-            instance = new DataPacketProcessor();
-        }
-        return instance;
+    private String masterId;
+    private String serverId;
+    private boolean isMaster = true;
+    private static Set<String> otherServers = new HashSet<>();
+    private static final String pluginId = "rankedpvp";
+
+    public DataPacketManager (RankedPvP pluign) {
+        super(pluign);
     }
 
-    private DataPacketProcessor () {
+    @Override
+    public boolean load () {
         FileConfiguration config = RankedPvP.getInstance().getConfig();
         if (!config.getBoolean("cross-server-settings.enabled", false)) {
-            return;
+            return true;
         }
-        RankedPvP.IS_MASTER = config.getBoolean("cross-server-settings.master", false);
+        isMaster = config.getBoolean("cross-server-settings.master", false);
 
         // Initialize Redis connection
         String ip, password;
@@ -79,18 +77,26 @@ public class DataPacketProcessor implements Listener {
             redisConnection = new RedisConnection(RankedPvP.getInstance(), connectionName, ip, password, port);
         } catch (Exception exception) {
             RankedPvP.logWarning("Error while initializing Redis connection!");
-            return;
+            return false;
         }
         RankedPvP.log("Initialized Redis connection.");
         redisConnection.test();
 
         // Initialize DataPacketManager
         serverId = config.getString("cross-server-settings.bungeecord-server-name", "");
-        dataPacketManager = new DataPacketManager(RankedPvP.getInstance(), redisConnection, "RankedPvP", serverId, DataPacketManager.DEFAULT_PACKET_SEND_RECEIVE_INTERVAL, DataPacketManager.DEFAULT_CLEAR_OLD_PACKETS);
+        dataPacketManager = new dev.tonysp.plugindata.data.DataPacketManager(RankedPvP.getInstance(), redisConnection, "RankedPvP", serverId, dev.tonysp.plugindata.data.DataPacketManager.DEFAULT_PACKET_SEND_RECEIVE_INTERVAL, dev.tonysp.plugindata.data.DataPacketManager.DEFAULT_CLEAR_OLD_PACKETS);
 
         RankedPvP.getInstance().getServer().getPluginManager().registerEvents(this, RankedPvP.getInstance());
 
         crossServerEnabled = true;
+
+        return true;
+    }
+
+    @Override
+    public void unload () {
+        if (dataPacketManager != null)
+            dataPacketManager.shutDown(true);
     }
 
     public void shareServerOnline () {
@@ -98,7 +104,7 @@ public class DataPacketProcessor implements Listener {
             DataPacket.newBuilder()
                     .action(Action.SERVER_ONLINE)
                     .boolean1(true)
-                    .boolean2(RankedPvP.IS_MASTER)
+                    .boolean2(isMaster())
                     .buildPacket()
                     .send();
         }
@@ -114,7 +120,7 @@ public class DataPacketProcessor implements Listener {
         return serverId;
     }
 
-    public DataPacketManager getDataPacketManager () {
+    public dev.tonysp.plugindata.data.DataPacketManager getDataPacketManager () {
         return dataPacketManager;
     }
 
@@ -124,47 +130,34 @@ public class DataPacketProcessor implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDataPacketReceiveEvent (DataPacketReceiveEvent event) {
-        if (!event.getDataPacket().getApplicationId().equalsIgnoreCase(RankedPvP.PLUGIN_ID))
+        if (!event.getDataPacket().getApplicationId().equalsIgnoreCase(pluginId))
             return;
 
         Bukkit.getScheduler().scheduleSyncDelayedTask(RankedPvP.getInstance(), () -> {
             DataPacket dataPacket = (DataPacket) event.getDataPacket();
-            RankedPvP.log("DATAPACKET RECEIVED -> " + dataPacket.getApplicationId() + ", " + dataPacket.getAction());
+            RankedPvP.logDebug("DATAPACKET RECEIVED -> " + dataPacket.getApplicationId() + ", " + dataPacket.getAction());
             Action action = dataPacket.getAction();
             switch (action) {
-                case ARENA_DATA:
-                    ArenaManager.getInstance().processData(dataPacket);
-                    break;
-                case PLAYER_DATA:
-                    PlayerManager.getInstance().processData(dataPacket);
-                    break;
-                case PLAYER_ARENA_JOIN:
-                    GameManager.getInstance().tryJoiningQueue(dataPacket.getUuid(), EventType.valueOf(dataPacket.getString().toUpperCase()));
-                    break;
-                case PLAYER_ARENA_LEAVE:
-                    GameManager.getInstance().tryLeavingQueue(dataPacket.getUuid(), EventType.valueOf(dataPacket.getString().toUpperCase()));
-                    break;
-                case GAME_ACCEPT_REMINDER:
-                    PlayerManager.getInstance().sendAcceptMessageToPlayer(dataPacket.getString(), dataPacket.getInteger(), false);
-                    break;
-                case PLAYER_MESSAGE:
-                    PlayerManager.getInstance().sendMessageToPlayer(dataPacket.getUuid(), dataPacket.getString(), false);
-                    break;
-                case SAVE_PLAYER_LOCATION_AND_TP:
-                    PlayerManager.getInstance().savePlayerLocationAndTeleport(dataPacket.getUuid(), false);
-                    break;
-                case GAME_ACCEPT:
-                    GameManager.getInstance().tryAcceptingGame(dataPacket.getUuid());
-                    break;
-                case ANNOUNCE:
-                    PlayerManager.getInstance().announce(dataPacket.getString(), dataPacket.getStringList().get(0), dataPacket.getStringList().get(1), false);
-                    break;
-                case PLAYER_LOCATION:
-                    ArenaPlayer arenaPlayer = PlayerManager.getInstance().getOrCreatePlayer(dataPacket.getUuid());
-                    if (!GameManager.getInstance().getInProgress().containsKey(arenaPlayer))
+                case ARENA_DATA -> plugin.arenas().processData(dataPacket);
+                case PLAYER_DATA -> plugin.players().processData(dataPacket);
+                case PLAYER_ARENA_JOIN ->
+                        plugin.games().tryJoiningQueue(dataPacket.getUuid(), EventType.valueOf(dataPacket.getString().toUpperCase()));
+                case PLAYER_ARENA_LEAVE ->
+                        plugin.games().tryLeavingQueue(dataPacket.getUuid(), EventType.valueOf(dataPacket.getString().toUpperCase()));
+                case GAME_ACCEPT_REMINDER ->
+                        plugin.players().sendAcceptMessageToPlayer(dataPacket.getString(), dataPacket.getInteger(), false);
+                case PLAYER_MESSAGE ->
+                        plugin.players().sendMessageToPlayer(dataPacket.getUuid(), dataPacket.getString(), false);
+                case SAVE_PLAYER_LOCATION_AND_TP ->
+                        plugin.players().savePlayerLocationAndTeleport(dataPacket.getUuid(), false);
+                case GAME_ACCEPT -> plugin.games().tryAcceptingGame(dataPacket.getUuid());
+                case ANNOUNCE ->
+                        plugin.players().announce(dataPacket.getString(), dataPacket.getStringList().get(0), dataPacket.getStringList().get(1), false);
+                case PLAYER_LOCATION -> {
+                    ArenaPlayer arenaPlayer = plugin.players().getOrCreatePlayer(dataPacket.getUuid());
+                    if (!plugin.games().getInProgress().containsKey(arenaPlayer))
                         return;
-
-                    TwoPlayerGame game = (TwoPlayerGame) GameManager.getInstance().getInProgress().get(arenaPlayer);
+                    TwoPlayerGame game = (TwoPlayerGame) plugin.games().getInProgress().get(arenaPlayer);
                     Warp location = dataPacket.getWarp();
                     if (game.playerOne.equals(arenaPlayer)) {
                         game.oneBackLocation = location;
@@ -173,34 +166,44 @@ public class DataPacketProcessor implements Listener {
                         game.twoBackLocation = location;
                         game.teleportPlayerTwoToLobby();
                     }
-                    break;
-                case WARP_PLAYER:
-                    dataPacket.getWarp().warpPlayer(dataPacket.getString(), false);
-                    break;
-                case SERVER_ONLINE:
-                    RankedPvP.getInstance().addServer(dataPacket.getSender());
+                }
+                case WARP_PLAYER -> dataPacket.getWarp().warpPlayer(dataPacket.getString(), false);
+                case SERVER_ONLINE -> {
+                    addServer(dataPacket.getSender());
                     if (dataPacket.getBoolean2()) {
-                        RankedPvP.MASTER_ID = dataPacket.getSender();
-                        if (GameManager.getInstance().getSpawn() != null) {
-                            GameManager.getInstance().getSpawn().server = RankedPvP.MASTER_ID;
+                        masterId = dataPacket.getSender();
+                        if (plugin.games().getSpawn() != null) {
+                            plugin.games().getSpawn().server = masterId;
                         }
                     } else {
-                        ArenaManager.getInstance().shareData(dataPacket.getSender());
-                        PlayerManager.getInstance().shareData(dataPacket.getSender());
+                        plugin.arenas().shareData(dataPacket.getSender());
+                        plugin.players().shareData(dataPacket.getSender());
                     }
                     if (dataPacket.getBoolean()) {
                         DataPacket.newBuilder()
                                 .action(Action.SERVER_ONLINE)
                                 .boolean1(false)
-                                .boolean2(RankedPvP.IS_MASTER)
+                                .boolean2(isMaster())
                                 .addReceiver(dataPacket.getSender())
                                 .buildPacket()
                                 .send();
                     }
-                    break;
-                default:
-                    break;
+                }
+                default -> {
+                }
             }
         });
+    }
+
+    public void addServer (String serverId) {
+        otherServers.add(serverId);
+    }
+
+    public boolean isMaster () {
+        return isMaster;
+    }
+
+    public String getMasterId () {
+        return masterId;
     }
 }

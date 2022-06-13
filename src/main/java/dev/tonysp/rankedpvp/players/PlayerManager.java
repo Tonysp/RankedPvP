@@ -2,7 +2,7 @@
  *
  *  * This file is part of RankedPvP, licensed under the MIT License.
  *  *
- *  *  Copyright (c) 2020 Antonín Sůva
+ *  *  Copyright (c) 2022 Antonín Sůva
  *  *
  *  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  *  of this software and associated documentation files (the "Software"), to deal
@@ -28,17 +28,14 @@ package dev.tonysp.rankedpvp.players;
 
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import dev.tonysp.rankedpvp.Manager;
 import dev.tonysp.rankedpvp.Messages;
 import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.Utils;
-import dev.tonysp.rankedpvp.arenas.Arena;
 import dev.tonysp.rankedpvp.arenas.Warp;
 import dev.tonysp.rankedpvp.data.Action;
 import dev.tonysp.rankedpvp.data.DataPacket;
-import dev.tonysp.rankedpvp.data.DataPacketProcessor;
-import dev.tonysp.rankedpvp.data.Database;
 import dev.tonysp.rankedpvp.game.EventType;
-import dev.tonysp.rankedpvp.game.GameManager;
 import dev.tonysp.rankedpvp.game.TwoPlayerGame;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -52,35 +49,38 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.*;
 
-public class PlayerManager implements Listener {
+public class PlayerManager extends Manager {
 
-    private static PlayerManager instance;
-
-    private Map<Integer, ArenaPlayer> playersById = new HashMap<>();
-    private Map<String, ArenaPlayer> playersByName = new HashMap<>();
-    private Map<UUID, ArenaPlayer> players = new HashMap<>();
-    private Map<String, Warp> playersToWarp = new HashMap<>();
+    private final Map<Integer, ArenaPlayer> playersById = new HashMap<>();
+    private final Map<String, ArenaPlayer> playersByName = new HashMap<>();
+    private final Map<UUID, ArenaPlayer> players = new HashMap<>();
+    private final Map<String, Warp> playersToWarp = new HashMap<>();
     private TreeSet<ArenaPlayer> topPlayersCache = new TreeSet<>();
 
     private boolean ranksEnabled = false;
-    private TreeMap<Integer, Rank> ranks = new TreeMap<>();
+    private final TreeMap<Integer, Rank> ranks = new TreeMap<>();
 
     private Sound ACCEPT_MESSAGE_SOUND = null;
 
-    public static PlayerManager getInstance () {
-        if (instance == null) {
-            instance = new PlayerManager();
-        }
-        return instance;
+    private int topPlayersTask, cooldownTask;
+
+    public PlayerManager (RankedPvP plugin) {
+        super(plugin);
     }
 
-    private PlayerManager () {
+    @Override
+    public boolean load () {
+        playersById.clear();
+        playersByName.clear();
+        players.clear();
+        playersToWarp.clear();
+        topPlayersCache.clear();
+
         RankedPvP plugin = RankedPvP.getInstance();
         loadRanks(plugin.getConfig());
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
@@ -89,21 +89,31 @@ public class PlayerManager implements Listener {
             ACCEPT_MESSAGE_SOUND = Sound.valueOf(plugin.getConfig().getString("accept-sound"));
         } catch (Exception ignored) {}
 
-        if (RankedPvP.IS_MASTER) {
-            players = Database.getInstance().loadPlayers();
+        if (plugin.dataPackets().isMaster()) {
+            if (!plugin.database().loadPlayers(players))
+                return false;
+
             for (ArenaPlayer arenaPlayer : players.values()) {
                 playersById.put(arenaPlayer.getId(), arenaPlayer);
                 playersByName.put(arenaPlayer.getName().toLowerCase(), arenaPlayer);
             }
         }
 
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+        cooldownTask = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
             for (EventType eventType : EventType.values()) {
                 eventType.decrementCooldowns();
             }
         }, 0, 1200);
 
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, this::refreshTopPlayers, 0, 1200);
+        topPlayersTask = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, this::refreshTopPlayers, 0, 1200);
+
+        return true;
+    }
+
+    @Override
+    public void unload () {
+        Bukkit.getScheduler().cancelTask(this.cooldownTask);
+        Bukkit.getScheduler().cancelTask(this.topPlayersTask);
     }
 
     public void loadRanks (FileConfiguration config) {
@@ -143,7 +153,7 @@ public class PlayerManager implements Listener {
     public void sendAcceptMessageToPlayer (String playerName, int timeRemaining, boolean share) {
         Player player = Bukkit.getPlayer(playerName);
         if (player == null || !player.isOnline()) {
-            if (share && DataPacketProcessor.getInstance().isCrossServerEnabled()) {
+            if (share && plugin.dataPackets().isCrossServerEnabled()) {
                 DataPacket.newBuilder()
                         .action(Action.GAME_ACCEPT_REMINDER)
                         .string(playerName)
@@ -168,7 +178,7 @@ public class PlayerManager implements Listener {
     public void savePlayerLocationAndTeleport (UUID uuid, boolean share) {
         Player player = Bukkit.getPlayer(uuid);
         if (player == null || !player.isOnline()) {
-            if (share && DataPacketProcessor.getInstance().isCrossServerEnabled()) {
+            if (share && plugin.dataPackets().isCrossServerEnabled()) {
                 DataPacket.newBuilder()
                         .action(Action.SAVE_PLAYER_LOCATION_AND_TP)
                         .uuid(uuid)
@@ -178,12 +188,12 @@ public class PlayerManager implements Listener {
             return;
         }
 
-        if (RankedPvP.IS_MASTER) {
+        if (plugin.dataPackets().isMaster()) {
             ArenaPlayer arenaPlayer = getOrCreatePlayer(uuid);
-            if (!GameManager.getInstance().getInProgress().containsKey(arenaPlayer))
+            if (!plugin.games().getInProgress().containsKey(arenaPlayer))
                 return;
 
-            TwoPlayerGame game = (TwoPlayerGame) GameManager.getInstance().getInProgress().get(arenaPlayer);
+            TwoPlayerGame game = (TwoPlayerGame) plugin.games().getInProgress().get(arenaPlayer);
             if (game.playerOne.equals(arenaPlayer)) {
                 game.oneBackLocation = Warp.fromLocation(player.getLocation());
                 game.teleportPlayerOneToLobby();
@@ -193,7 +203,7 @@ public class PlayerManager implements Listener {
             }
         } else {
             DataPacket.newBuilder()
-                    .addReceiver(RankedPvP.MASTER_ID)
+                    .addReceiver(plugin.dataPackets().getMasterId())
                     .action(Action.PLAYER_LOCATION)
                     .uuid(uuid)
                     .warp(Warp.fromLocation(player.getLocation()))
@@ -210,7 +220,7 @@ public class PlayerManager implements Listener {
             sendMessageToPlayer(player.getUniqueId(), message, false);
         }
 
-        if (share && DataPacketProcessor.getInstance().isCrossServerEnabled()) {
+        if (share && plugin.dataPackets().isCrossServerEnabled()) {
             ArrayList<String> list = new ArrayList<>();
             list.add(except1);
             list.add(except2);
@@ -234,7 +244,7 @@ public class PlayerManager implements Listener {
             return;
         }
 
-        if (share && DataPacketProcessor.getInstance().isCrossServerEnabled()) {
+        if (share && plugin.dataPackets().isCrossServerEnabled()) {
             DataPacket.newBuilder()
                     .action(Action.PLAYER_MESSAGE)
                     .uuid(playerUuid)
@@ -285,8 +295,8 @@ public class PlayerManager implements Listener {
 
     private ArenaPlayer createPlayer (UUID uuid) {
         ArenaPlayer player = new ArenaPlayer(uuid);
-        if (RankedPvP.IS_MASTER) {
-            Database.getInstance().insertPlayer(player);
+        if (plugin.dataPackets().isMaster()) {
+            plugin.database().insertPlayer(player);
         }
         playersById.put(player.getId(), player);
         players.put(uuid, player);
@@ -328,11 +338,11 @@ public class PlayerManager implements Listener {
         if (ranksEnabled() && Rank.UNRANKED != null) {
             topPlayersCache.removeIf(player -> player.getMatches() < Rank.GAMES_TO_LOSE_UNRANKED);
         }
-        topPlayersCache = (TreeSet<ArenaPlayer>)topPlayersCache.descendingSet();
+        topPlayersCache = (TreeSet<ArenaPlayer>) topPlayersCache.descendingSet();
     }
 
     public Optional<ArenaPlayer> getPlayerByRank (int rank) {
-        TreeSet<ArenaPlayer> players = PlayerManager.getInstance().getTopPlayers();
+        Set<ArenaPlayer> players = getTopPlayers();
         Iterator<ArenaPlayer> it = players.iterator();
         int i = 0;
         ArenaPlayer current = null;
@@ -365,7 +375,7 @@ public class PlayerManager implements Listener {
             playersByName.remove(arenaPlayer.get().getName().toLowerCase());
             playersByName.put(player.getName().toLowerCase(), arenaPlayer.get());
             arenaPlayer.get().setName(player.getName());
-            Database.getInstance().updatePlayer(arenaPlayer.get());
+            plugin.database().updatePlayer(arenaPlayer.get());
         }
     }
 
@@ -385,11 +395,11 @@ public class PlayerManager implements Listener {
             playersToWarp.get(playerName).warpPlayer(playerName, false);
             playersToWarp.remove(playerName);
         } else {
-            Optional<ArenaPlayer> player = PlayerManager.getInstance().getPlayerIfExists(event.getPlayer().getUniqueId());
-            if (!player.isPresent() || !GameManager.getInstance().getInProgress().containsKey(player.get()))
+            Optional<ArenaPlayer> player = getPlayerIfExists(event.getPlayer().getUniqueId());
+            if (!player.isPresent() || !plugin.games().getInProgress().containsKey(player.get()))
                 return;
 
-            TwoPlayerGame game = (TwoPlayerGame) GameManager.getInstance().getInProgress().get(player.get());
+            TwoPlayerGame game = (TwoPlayerGame) plugin.games().getInProgress().get(player.get());
             if (game.getArena().eventType.isBackupInventory()) {
                 player.get().backupInventory(false);
                 player.get().restoreInventory(true);
@@ -410,11 +420,11 @@ public class PlayerManager implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerQuitEvent (PlayerQuitEvent event) {
-        Optional<ArenaPlayer> player = PlayerManager.getInstance().getPlayerIfExists(event.getPlayer().getUniqueId());
-        if (!player.isPresent() || !GameManager.getInstance().getInProgress().containsKey(player.get()))
+        Optional<ArenaPlayer> player = getPlayerIfExists(event.getPlayer().getUniqueId());
+        if (!player.isPresent() || !plugin.games().getInProgress().containsKey(player.get()))
             return;
 
-        EventType eventType = GameManager.getInstance().getInProgress().get(player.get()).getArena().eventType;
+        EventType eventType = plugin.games().getInProgress().get(player.get()).getArena().eventType;
         if (eventType.isBackupInventory()) {
             player.get().backupInventory(true);
             player.get().restoreInventory(false);
@@ -423,7 +433,7 @@ public class PlayerManager implements Listener {
             player.get().backupStatusEffects(true);
             player.get().restoreStatusEffects(false);
         }
-        GameManager.getInstance().getSpawn().warpPlayer(player.get().getName(), false);
+        plugin.games().getSpawn().warpPlayer(player.get().getName(), false);
     }
 }
 

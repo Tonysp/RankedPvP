@@ -2,7 +2,7 @@
  *
  *  * This file is part of RankedPvP, licensed under the MIT License.
  *  *
- *  *  Copyright (c) 2020 Antonín Sůva
+ *  *  Copyright (c) 2022 Antonín Sůva
  *  *
  *  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  *  of this software and associated documentation files (the "Software"), to deal
@@ -26,13 +26,14 @@
 
 package dev.tonysp.rankedpvp.players;
 
+import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.Utils;
 import org.bukkit.configuration.ConfigurationSection;
 
 public class Rank {
 
-    private String name;
-    private int lowSkill, highSkill;
+    private final String name;
+    private final int lowSkill, highSkill;
 
     public static int GAMES_TO_LOSE_UNRANKED = 0;
     public static Rank UNRANKED = null;
@@ -73,7 +74,7 @@ public class Rank {
         if (UNRANKED != null && GAMES_TO_LOSE_UNRANKED > gamesPlayed) {
             return UNRANKED;
         } else {
-            return PlayerManager.getInstance().getRanks().floorEntry(rating).getValue();
+            return RankedPvP.getInstance().players().getRanks().floorEntry(rating).getValue();
         }
     }
 }

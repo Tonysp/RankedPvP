@@ -2,7 +2,7 @@
  *
  *  * This file is part of RankedPvP, licensed under the MIT License.
  *  *
- *  *  Copyright (c) 2020 Antonín Sůva
+ *  *  Copyright (c) 2022 Antonín Sůva
  *  *
  *  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  *  of this software and associated documentation files (the "Software"), to deal
@@ -31,15 +31,12 @@ import de.gesundkrank.jskills.Player;
 import de.gesundkrank.jskills.Rating;
 import de.gesundkrank.jskills.Team;
 import de.gesundkrank.jskills.trueskill.TwoPlayerTrueSkillCalculator;
+import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.game.EventType;
 import dev.tonysp.rankedpvp.game.Game;
-import dev.tonysp.rankedpvp.game.GameManager;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
 import dev.tonysp.rankedpvp.players.EntityWithRating;
-import dev.tonysp.rankedpvp.players.PlayerManager;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -50,6 +47,12 @@ import java.util.Optional;
 import java.util.TreeSet;
 
 public class PvPCommand implements CommandExecutor {
+
+    private final RankedPvP plugin;
+
+    public PvPCommand (RankedPvP plugin) {
+        this.plugin = plugin;
+    }
 
     public static final String TITLE = ChatColor.GOLD + "--// " + ChatColor.GRAY + "RankedPvP" + ChatColor.GOLD + " §l//--";
     public static final String FANCY_LINE = ChatColor.GRAY + "" + ChatColor.BOLD + "▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰";
@@ -74,22 +77,22 @@ public class PvPCommand implements CommandExecutor {
                 return true;
             }
 
-            Optional<ArenaPlayer> player = PlayerManager.getInstance().getPlayerIfExists(args[1]);
+            Optional<ArenaPlayer> player = plugin.players().getPlayerIfExists(args[1]);
             if (player.isPresent()) {
                 sender.sendMessage(FANCY_LINE);
-                String rank = PlayerManager.getInstance().getPlayerRating(player.get().getRatingVisible(), player.get().getMatches());
+                String rank = plugin.players().getPlayerRating(player.get().getRatingVisible(), player.get().getMatches());
                 sender.sendMessage(ChatColor.YELLOW + "player: " + rank + " " + ChatColor.GRAY + player.get().getName());
                 sender.sendMessage(ChatColor.YELLOW + "number of matches: " + ChatColor.GRAY + player.get().getMatches());
                 sender.sendMessage(ChatColor.YELLOW + "wins/loses/draws: " + ChatColor.GRAY + player.get().getWins() + "/" + player.get().getLosses() + "/" + player.get().getDraws());
             } else {
-                String rank = PlayerManager.getInstance().getPlayerRating((int) EntityWithRating.DEFAULT_RATING, 0);
+                String rank = plugin.players().getPlayerRating((int) EntityWithRating.DEFAULT_RATING, 0);
                 sender.sendMessage(ChatColor.YELLOW + "player: " + rank + " " + ChatColor.GRAY + args[1]);
                 sender.sendMessage(ChatColor.YELLOW + "number of matches: " + ChatColor.GRAY + "0");
                 sender.sendMessage(ChatColor.YELLOW + "wins/loses/draws: " + ChatColor.GRAY + "0/0/0");
             }
             return true;
         } else if (args[0].equalsIgnoreCase("ladder")) {
-            TreeSet<ArenaPlayer> players = PlayerManager.getInstance().getTopPlayers();
+            TreeSet<ArenaPlayer> players = plugin.players().getTopPlayers();
             if (players.isEmpty()) {
                 sender.sendMessage(ChatColor.YELLOW + "The ladder is empty.");
                 return true;
@@ -118,7 +121,7 @@ public class PvPCommand implements CommandExecutor {
             }
 
             org.bukkit.entity.Player player = (org.bukkit.entity.Player) sender;
-            GameManager.getInstance().tryJoiningQueue(player.getUniqueId(), eventType.get());
+            plugin.games().tryJoiningQueue(player.getUniqueId(), eventType.get());
         } else if (args[0].equalsIgnoreCase("leave")) {
             if (sender instanceof ConsoleCommandSender) {
                 sender.sendMessage(ChatColor.RED + "This command can be only used in game.");
@@ -136,7 +139,7 @@ public class PvPCommand implements CommandExecutor {
                 return true;
             }
 
-            GameManager.getInstance().tryLeavingQueue(player.getUniqueId(), eventType.get());
+            plugin.games().tryLeavingQueue(player.getUniqueId(), eventType.get());
         } else if (args[0].equalsIgnoreCase("togglejoin")) {
             if (sender instanceof ConsoleCommandSender) {
                 sender.sendMessage(ChatColor.RED + "This command can be only used in game.");
@@ -154,14 +157,14 @@ public class PvPCommand implements CommandExecutor {
                 return true;
             }
 
-            GameManager.getInstance().toggleJoin(player.getUniqueId(), eventType.get());
+            plugin.games().toggleJoin(player.getUniqueId(), eventType.get());
         } else if (args[0].equalsIgnoreCase("accept")) {
             if (sender instanceof ConsoleCommandSender) {
                 sender.sendMessage(ChatColor.RED + "This command can be only used in game.");
                 return true;
             }
             org.bukkit.entity.Player player = (org.bukkit.entity.Player) sender;
-            GameManager.getInstance().tryAcceptingGame(player.getUniqueId());
+            plugin.games().tryAcceptingGame(player.getUniqueId());
         } else if (args[0].equalsIgnoreCase("matchquality")) {
             if (sender instanceof ConsoleCommandSender) {
                 sender.sendMessage(ChatColor.RED + "This command can be only used in game.");
@@ -179,6 +182,14 @@ public class PvPCommand implements CommandExecutor {
             TwoPlayerTrueSkillCalculator calculator = new TwoPlayerTrueSkillCalculator();
             GameInfo gameInfo = Game.defaultGameInfo();
             sender.sendMessage("Match quality: " + calculator.calculateMatchQuality(gameInfo, Team.concat(t0, t1)));
+        } else if (args[0].equalsIgnoreCase("reload")) {
+            if (!sender.hasPermission("rankedpvp.reload")) {
+                sender.sendMessage(ChatColor.RED + "No permission!");
+                return true;
+            }
+
+            sender.sendMessage(plugin.disable());
+            sender.sendMessage(plugin.enable());
         }
 
         return true;

@@ -2,7 +2,7 @@
  *
  *  * This file is part of RankedPvP, licensed under the MIT License.
  *  *
- *  *  Copyright (c) 2020 Antonín Sůva
+ *  *  Copyright (c) 2022 Antonín Sůva
  *  *
  *  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  *  of this software and associated documentation files (the "Software"), to deal
@@ -29,10 +29,8 @@ package dev.tonysp.rankedpvp.game;
 import dev.tonysp.rankedpvp.Messages;
 import dev.tonysp.rankedpvp.Utils;
 import dev.tonysp.rankedpvp.arenas.Arena;
-import dev.tonysp.rankedpvp.arenas.ArenaManager;
 import dev.tonysp.rankedpvp.arenas.Warp;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
-import dev.tonysp.rankedpvp.players.PlayerManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -60,10 +58,10 @@ public class TwoPlayerGame extends Game {
             if (timeToAccept % (5*4) == 0) {
                 int timeRemaining = timeToAccept / 4;
                 if (!oneAccepted) {
-                    PlayerManager.getInstance().sendAcceptMessageToPlayer(playerOne.getName(), timeRemaining, true);
+                    plugin.players().sendAcceptMessageToPlayer(playerOne.getName(), timeRemaining, true);
                 }
                 if (!twoAccepted) {
-                    PlayerManager.getInstance().sendAcceptMessageToPlayer(playerTwo.getName(), timeRemaining, true);
+                    plugin.players().sendAcceptMessageToPlayer(playerTwo.getName(), timeRemaining, true);
                 }
             }
             timeToAccept --;
@@ -71,15 +69,15 @@ public class TwoPlayerGame extends Game {
                 String message = Messages.DID_NOT_ACCEPT.getMessage();
                 String message2 = Messages.OPPONENT_DID_NOT_ACCEPT.getMessage();
                 if (!oneAccepted) {
-                    PlayerManager.getInstance().sendMessageToPlayer(playerOne.getUuid(), message, true);
+                    plugin.players().sendMessageToPlayer(playerOne.getUuid(), message, true);
                     if (twoAccepted) {
-                        PlayerManager.getInstance().sendMessageToPlayer(playerTwo.getUuid(), message2, true);
+                        plugin.players().sendMessageToPlayer(playerTwo.getUuid(), message2, true);
                     }
                 }
                 if (!twoAccepted) {
-                    PlayerManager.getInstance().sendMessageToPlayer(playerTwo.getUuid(), message, true);
+                    plugin.players().sendMessageToPlayer(playerTwo.getUuid(), message, true);
                     if (oneAccepted) {
-                        PlayerManager.getInstance().sendMessageToPlayer(playerOne.getUuid(), message2, true);
+                        plugin.players().sendMessageToPlayer(playerOne.getUuid(), message2, true);
                     }
                 }
 
@@ -135,10 +133,10 @@ public class TwoPlayerGame extends Game {
 
             if (timeToTeleport % (7*4) == 0 && timeToTeleport <= 21*4) {
                 if (!firstInArena) {
-                    PlayerManager.getInstance().savePlayerLocationAndTeleport(playerOne.getUuid(), true);
+                    plugin.players().savePlayerLocationAndTeleport(playerOne.getUuid(), true);
                 }
                 if (!secondInArena) {
-                    PlayerManager.getInstance().savePlayerLocationAndTeleport(playerTwo.getUuid(), true);
+                    plugin.players().savePlayerLocationAndTeleport(playerTwo.getUuid(), true);
                 }
             }
             timeToTeleport --;
@@ -186,13 +184,13 @@ public class TwoPlayerGame extends Game {
                 } else if (timeRemaining == 120*4) {
                     message = message.replaceAll("%TIME%", "zbyvaji 2 minuty");
                 }
-                PlayerManager.getInstance().sendMessageToPlayer(playerOne.getUuid(), message, true);
-                PlayerManager.getInstance().sendMessageToPlayer(playerTwo.getUuid(), message, true);
+                plugin.players().sendMessageToPlayer(playerOne.getUuid(), message, true);
+                plugin.players().sendMessageToPlayer(playerTwo.getUuid(), message, true);
             }
             if (timeRemaining == 30*4) {
                 message = message.replaceAll("%TIME%", "zbyva 30 sekund");
-                PlayerManager.getInstance().sendMessageToPlayer(playerOne.getUuid(), message, true);
-                PlayerManager.getInstance().sendMessageToPlayer(playerTwo.getUuid(), message, true);
+                plugin.players().sendMessageToPlayer(playerOne.getUuid(), message, true);
+                plugin.players().sendMessageToPlayer(playerTwo.getUuid(), message, true);
             }
 
             if (timeRemaining == 0) {
@@ -238,8 +236,8 @@ public class TwoPlayerGame extends Game {
 
     @Override
     public void endMatch () {
-        GameManager.getInstance().getInProgress().remove(playerOne);
-        GameManager.getInstance().getInProgress().remove(playerTwo);
+        plugin.games().getInProgress().remove(playerOne);
+        plugin.games().getInProgress().remove(playerTwo);
 
         playerOne.heal();
         playerTwo.heal();
@@ -261,20 +259,20 @@ public class TwoPlayerGame extends Game {
             twoBackLocation.warpPlayer(playerTwo.getName(), true);
         }
 
-        GameManager.getInstance().getWaitingForAccept().remove(playerOne);
-        GameManager.getInstance().getWaitingForAccept().remove(playerTwo);
-        ArenaManager.getInstance().unlockArena(arena);
+        plugin.games().getWaitingForAccept().remove(playerOne);
+        plugin.games().getWaitingForAccept().remove(playerTwo);
+        plugin.arenas().unlockArena(arena);
         if (gameState != GameState.FAILED) {
             gameState = GameState.ENDED;
-            GameManager.getInstance().gameEnded(this, winnerId);
+            plugin.games().gameEnded(this, winnerId);
         }
         setCancelled(true);
     }
 
     public void teleportBothToLobby () {
         gameState = GameState.IN_LOBBY;
-        PlayerManager.getInstance().savePlayerLocationAndTeleport(playerOne.getUuid(), true);
-        PlayerManager.getInstance().savePlayerLocationAndTeleport(playerTwo.getUuid(), true);
+        plugin.players().savePlayerLocationAndTeleport(playerOne.getUuid(), true);
+        plugin.players().savePlayerLocationAndTeleport(playerTwo.getUuid(), true);
     }
 
     public void teleportPlayerOneToLobby () {

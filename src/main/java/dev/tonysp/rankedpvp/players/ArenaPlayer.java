@@ -2,7 +2,7 @@
  *
  *  * This file is part of RankedPvP, licensed under the MIT License.
  *  *
- *  *  Copyright (c) 2020 Antonín Sůva
+ *  *  Copyright (c) 2022 Antonín Sůva
  *  *
  *  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  *  of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@
 package dev.tonysp.rankedpvp.players;
 
 import dev.tonysp.rankedpvp.Messages;
+import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.game.MatchResult;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -85,7 +86,7 @@ public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWi
     }
 
     public String getRatingColored () {
-        return PlayerManager.getInstance().getPlayerRating(getRatingVisible(), getMatches());
+        return RankedPvP.getInstance().players().getPlayerRating(getRatingVisible(), getMatches());
     }
 
     public void recalculateVisibleRatingCoefficient () {
@@ -196,7 +197,7 @@ public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWi
     }
 
     public String getNameWithRatingAndChange (double change) {
-        if (PlayerManager.getInstance().ranksEnabled()) {
+        if (RankedPvP.getInstance().players().ranksEnabled()) {
             return getNameWithRating() + ChatColor.RESET;
         }
 

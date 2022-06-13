@@ -1,9 +1,9 @@
 name: RankedPvP
 main: dev.tonysp.rankedpvp.RankedPvP
-version: ${project.version}
-website: https://tonysp.dev/
+version: ${pluginVersion}
+website: https://github.com/Tonysp
 authors: [Tonysp]
-description: ${project.description}
+description: "Ranked PvP arena plugin"
 depend: [WorldEdit,WorldGuard]
 softdepend: [PlaceholderAPI]
 api-version: 1.16

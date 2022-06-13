@@ -2,7 +2,7 @@
  *
  *  * This file is part of RankedPvP, licensed under the MIT License.
  *  *
- *  *  Copyright (c) 2020 Antonín Sůva
+ *  *  Copyright (c) 2022 Antonín Sůva
  *  *
  *  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  *  of this software and associated documentation files (the "Software"), to deal
@@ -27,16 +27,19 @@
 package dev.tonysp.rankedpvp.game;
 
 import de.gesundkrank.jskills.GameInfo;
+import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.arenas.Arena;
 import dev.tonysp.rankedpvp.players.EntityWithRating;
 
 public class Game {
 
-    Arena arena;
-    GameState gameState;
-    GameInfo gameInfo;
-    boolean cancelled = false;
+    protected RankedPvP plugin;
+    protected Arena arena;
+    protected GameState gameState;
+    protected GameInfo gameInfo;
+    private boolean cancelled = false;
 
+    // Game ticks every 250 ms (every 5 Minecraft ticks)
     int timeRemaining = 180 * 4;
     int timeToAccept = 30 * 4;
     int timeToTeleport = 30 * 4;
@@ -45,6 +48,7 @@ public class Game {
     int timeToStartFull = 5 * 4;
 
     public Game (Arena arena) {
+        this.plugin = RankedPvP.getInstance();
         this.arena = arena;
         this.gameState = GameState.WAITING_TO_ACCEPT;
         this.gameInfo = defaultGameInfo();

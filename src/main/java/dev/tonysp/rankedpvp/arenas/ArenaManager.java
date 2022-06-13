@@ -2,7 +2,7 @@
  *
  *  * This file is part of RankedPvP, licensed under the MIT License.
  *  *
- *  *  Copyright (c) 2020 Antonín Sůva
+ *  *  Copyright (c) 2022 Antonín Sůva
  *  *
  *  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  *  of this software and associated documentation files (the "Software"), to deal
@@ -26,110 +26,114 @@
 
 package dev.tonysp.rankedpvp.arenas;
 
+import dev.tonysp.rankedpvp.Manager;
 import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.Utils;
 import dev.tonysp.rankedpvp.data.Action;
 import dev.tonysp.rankedpvp.data.DataPacket;
 import dev.tonysp.rankedpvp.game.EventType;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.*;
 
-public class ArenaManager {
-
-    private static ArenaManager instance;
+public class ArenaManager extends Manager {
 
     private final ArrayList<Arena> arenas = new ArrayList<>();
     private final HashSet<Arena> lockedArenas = new HashSet<>();
 
-
-    public static ArenaManager getInstance () {
-        if (instance == null) {
-            instance = new ArenaManager();
-        }
-        return instance;
+    public ArenaManager (RankedPvP plugin) {
+        super(plugin);
     }
 
-    private ArenaManager () {
+    @Override
+    public boolean load () {
+        arenas.clear();
+        lockedArenas.clear();
+
+
         RankedPvP plugin = RankedPvP.getInstance();
         ConfigurationSection config = plugin.getConfig();
 
-        if (!RankedPvP.IS_MASTER) {
-            return;
+        if (!plugin.dataPackets().isMaster()) {
+            return true;
         }
 
         // Load arenas from config
         RankedPvP.log("Loading arenas:");
         ConfigurationSection arenasConfig = config.getConfigurationSection("arenas");
         if (arenasConfig != null)
-        for (String arenaName : arenasConfig.getKeys(false)) {
-            RankedPvP.log("... loading arena " + arenaName);
-            ConfigurationSection arenaConfig = config.getConfigurationSection("arenas." + arenaName);
-            if (arenaConfig == null) {
-                RankedPvP.logWarning("error while loading arena: invalid arena config");
-                continue;
-            }
-            String eventTypeString = arenaConfig.getString("event-type", "");
-            if (eventTypeString == null) {
-                RankedPvP.logWarning("error while loading arena: invalid event type");
-                continue;
-            }
-            Optional<EventType> eventType = EventType.fromString(eventTypeString);
-            if (!eventType.isPresent()) {
-                RankedPvP.logWarning("error while loading arena: invalid event type");
-                continue;
-            }
-
-            String name = arenaConfig.getString("name");
-
-            boolean isRanked = arenaConfig.getBoolean("ranked", false);
-
-            String regionName = arenaConfig.getString("region", "");
-
-            List<String> teamOneWarpsStrings = arenaConfig.getStringList("team-one-warps");
-            List<Warp> teamOneWarps = loadWarps(teamOneWarpsStrings);
-            if (teamOneWarps.isEmpty()) {
-                RankedPvP.logWarning("error while loading arena: no team-one warps loaded");
-                continue;
-            }
-
-            List<String> teamTwoWarpsStrings = arenaConfig.getStringList("team-two-warps");
-            List<Warp> teamTwoWarps = loadWarps(teamTwoWarpsStrings);
-            if (teamTwoWarps.isEmpty()) {
-                RankedPvP.logWarning("error while loading arena: no team-two warps loaded");
-                continue;
-            }
-
-            boolean error = false;
-            HashMap<Location, Material> lobbyDoorBlocks = new HashMap<>();
-            for (String doorBlockString : arenaConfig.getStringList("lobby-door-blocks")) {
-                String[] blockData = doorBlockString.split(",");
-                int x = Integer.parseInt(blockData[0]);
-                int y = Integer.parseInt(blockData[1]);
-                int z = Integer.parseInt(blockData[2]);
-                World world = Bukkit.getWorld(blockData[3]);
-                if (world == null) {
-                    error = true;
-                    RankedPvP.logWarning("error while loading arena: invalid world " + blockData[3]);
-                    break;
+            for (String arenaName : arenasConfig.getKeys(false)) {
+                RankedPvP.log("... loading arena " + arenaName);
+                ConfigurationSection arenaConfig = config.getConfigurationSection("arenas." + arenaName);
+                if (arenaConfig == null) {
+                    RankedPvP.logWarning("error while loading arena: invalid arena config");
+                    continue;
                 }
-                Material material = Material.valueOf(blockData[4].toUpperCase());
+                String eventTypeString = arenaConfig.getString("event-type", "");
+                if (eventTypeString == null) {
+                    RankedPvP.logWarning("error while loading arena: invalid event type");
+                    continue;
+                }
+                Optional<EventType> eventType = EventType.fromString(eventTypeString);
+                if (!eventType.isPresent()) {
+                    RankedPvP.logWarning("error while loading arena: invalid event type");
+                    continue;
+                }
 
-                Location location = new Location(world, x, y, z);
-                lobbyDoorBlocks.put(location, material);
+                String name = arenaConfig.getString("name");
+
+                boolean isRanked = arenaConfig.getBoolean("ranked", false);
+
+                String regionName = arenaConfig.getString("region", "");
+
+                List<String> teamOneWarpsStrings = arenaConfig.getStringList("team-one-warps");
+                List<Warp> teamOneWarps = loadWarps(teamOneWarpsStrings);
+                if (teamOneWarps.isEmpty()) {
+                    RankedPvP.logWarning("error while loading arena: no team-one warps loaded");
+                    continue;
+                }
+
+                List<String> teamTwoWarpsStrings = arenaConfig.getStringList("team-two-warps");
+                List<Warp> teamTwoWarps = loadWarps(teamTwoWarpsStrings);
+                if (teamTwoWarps.isEmpty()) {
+                    RankedPvP.logWarning("error while loading arena: no team-two warps loaded");
+                    continue;
+                }
+
+                boolean error = false;
+                HashMap<Location, Material> lobbyDoorBlocks = new HashMap<>();
+                for (String doorBlockString : arenaConfig.getStringList("lobby-door-blocks")) {
+                    String[] blockData = doorBlockString.split(",");
+                    int x = Integer.parseInt(blockData[0]);
+                    int y = Integer.parseInt(blockData[1]);
+                    int z = Integer.parseInt(blockData[2]);
+                    World world = Bukkit.getWorld(blockData[3]);
+                    if (world == null) {
+                        error = true;
+                        RankedPvP.logWarning("error while loading arena: invalid world " + blockData[3]);
+                        break;
+                    }
+                    Material material = Material.valueOf(blockData[4].toUpperCase());
+
+                    Location location = new Location(world, x, y, z);
+                    lobbyDoorBlocks.put(location, material);
+                }
+
+                if (error)
+                    continue;
+
+                Arena arena = new Arena(name, eventType.get(), teamOneWarps, teamTwoWarps, regionName, isRanked);
+                arena.lobbyDoorBlocks = lobbyDoorBlocks;
+                arenas.add(arena);
             }
 
-            if (error)
-                continue;
+        return true;
+    }
 
-            Arena arena = new Arena(name, eventType.get(), teamOneWarps, teamTwoWarps, regionName, isRanked);
-            arena.lobbyDoorBlocks = lobbyDoorBlocks;
-            arenas.add(arena);
-        }
+    @Override
+    public void unload () {
+
     }
 
     public Optional<Arena> getAndLockFreeArena (EventType eventType) {

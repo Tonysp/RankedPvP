@@ -2,7 +2,7 @@
  *
  *  * This file is part of RankedPvP, licensed under the MIT License.
  *  *
- *  *  Copyright (c) 2020 Antonín Sůva
+ *  *  Copyright (c) 2022 Antonín Sůva
  *  *
  *  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  *  of this software and associated documentation files (the "Software"), to deal
@@ -65,7 +65,7 @@ public class DataPacket extends dev.tonysp.plugindata.data.packets.DataPacket {
             List<String> stringList,
             Map<String, List<Warp>> warps
     ) {
-        super(DataPacketProcessor.getInstance().getDataPacketManager(), RankedPvP.PLUGIN_ID, receivers);
+        super(RankedPvP.getInstance().dataPackets().getDataPacketManager(), RankedPvP.getInstance().dataPackets().getServerId(), receivers);
         this.setSender(sender);
         this.action = action;
         this.warp = warp;
@@ -145,7 +145,7 @@ public class DataPacket extends dev.tonysp.plugindata.data.packets.DataPacket {
 
         public DataPacket buildPacket () {
             return new DataPacket(
-                    DataPacketProcessor.getInstance().getServerId(),
+                    RankedPvP.getInstance().dataPackets().getServerId(),
                     this.receivers,
                     this.action,
                     this.warp,

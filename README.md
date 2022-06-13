@@ -1,5 +1,5 @@
 <h1>
-    <img src="rankedpvplogotext.png" alt="Ranked PvP" width="400" /> 
+    <img src="graphics/rankedpvplogotext.png" alt="Ranked PvP" width="400" /> 
 </h1>
 
 1v1 arena minigame plugin for Minecraft servers.

@@ -2,7 +2,7 @@
  *
  *  * This file is part of RankedPvP, licensed under the MIT License.
  *  *
- *  *  Copyright (c) 2020 Antonín Sůva
+ *  *  Copyright (c) 2022 Antonín Sůva
  *  *
  *  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  *  of this software and associated documentation files (the "Software"), to deal
@@ -29,8 +29,6 @@ package dev.tonysp.rankedpvp.arenas;
 import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.data.Action;
 import dev.tonysp.rankedpvp.data.DataPacket;
-import dev.tonysp.rankedpvp.data.DataPacketProcessor;
-import dev.tonysp.rankedpvp.players.PlayerManager;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -56,8 +54,8 @@ public class Warp implements Serializable, Comparable<Warp> {
     }
 
     public boolean isOnLocalServer () {
-        if (DataPacketProcessor.getInstance().isCrossServerEnabled()) {
-            return this.server.equalsIgnoreCase(DataPacketProcessor.getInstance().getServerId());
+        if (RankedPvP.getInstance().dataPackets().isCrossServerEnabled()) {
+            return this.server.equalsIgnoreCase(RankedPvP.getInstance().dataPackets().getServerId());
         } else {
             return true;
         }
@@ -65,9 +63,6 @@ public class Warp implements Serializable, Comparable<Warp> {
 
     public void warpPlayer (String playerName, boolean share) {
         final Player player = Bukkit.getPlayer(playerName);
-        /*if (player != null) {
-            RankedPvP.log("WARPING ONLINE: " + player.isOnline());
-        }*/
         if (isOnLocalServer()) {
             if (player != null && player.isOnline()) {
                 World world = Bukkit.getWorld(this.world);
@@ -80,7 +75,7 @@ public class Warp implements Serializable, Comparable<Warp> {
 
                 player.teleport(location.get(), PlayerTeleportEvent.TeleportCause.PLUGIN);
             } else {
-                if (share && DataPacketProcessor.getInstance().isCrossServerEnabled()) {
+                if (share && RankedPvP.getInstance().dataPackets().isCrossServerEnabled()) {
                     DataPacket.newBuilder()
                             .action(Action.WARP_PLAYER)
                             .warp(this)
@@ -89,7 +84,7 @@ public class Warp implements Serializable, Comparable<Warp> {
                             .send();
                 }
 
-                PlayerManager.getInstance().addPlayerToWarp(playerName, this);
+                RankedPvP.getInstance().players().addPlayerToWarp(playerName, this);
             }
         } else {
             if (share) {
@@ -102,8 +97,8 @@ public class Warp implements Serializable, Comparable<Warp> {
                         .send();
             }
             if (player != null && player.isOnline()) {
-                RankedPvP.log("SWITCHING SERVER");
-                PlayerManager.getInstance().switchServer(player, server);
+                RankedPvP.logDebug("SWITCHING SERVER");
+                RankedPvP.getInstance().players().switchServer(player, server);
             }
         }
     }
@@ -120,7 +115,7 @@ public class Warp implements Serializable, Comparable<Warp> {
         warp.z = location.getZ();
         warp.yaw = location.getYaw();
         warp.pitch = location.getPitch();
-        warp.server = DataPacketProcessor.getInstance().getServerId();
+        warp.server = RankedPvP.getInstance().dataPackets().getServerId();
         return warp;
     }
 

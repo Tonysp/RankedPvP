@@ -2,7 +2,7 @@
  *
  *  * This file is part of RankedPvP, licensed under the MIT License.
  *  *
- *  *  Copyright (c) 2020 Antonín Sůva
+ *  *  Copyright (c) 2022 Antonín Sůva
  *  *
  *  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  *  of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,6 @@
 
 package dev.tonysp.rankedpvp;
 
-import dev.tonysp.rankedpvp.players.PlayerManager;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 
@@ -105,7 +104,7 @@ public enum Messages {
         if (!isMessageSet || getMessage().equalsIgnoreCase("")) return;
 
         String message = PREFIX.getMessage() + getMessage();
-        PlayerManager.getInstance().sendMessageToPlayer(playerUuid, ChatColor.translateAlternateColorCodes('&', message), true);
+        RankedPvP.getInstance().players().sendMessageToPlayer(playerUuid, ChatColor.translateAlternateColorCodes('&', message), true);
     }
 
     public void sendTo (UUID playerUuid, String...variables) {
@@ -115,6 +114,6 @@ public enum Messages {
         for (String variable : variables) {
             message = message.replaceAll(variable.split(":")[0], variable.split(":")[1]);
         }
-        PlayerManager.getInstance().sendMessageToPlayer(playerUuid, ChatColor.translateAlternateColorCodes('&', message), true);
+        RankedPvP.getInstance().players().sendMessageToPlayer(playerUuid, ChatColor.translateAlternateColorCodes('&', message), true);
     }
 }
