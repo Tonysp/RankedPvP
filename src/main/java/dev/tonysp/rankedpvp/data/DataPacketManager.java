@@ -29,6 +29,7 @@ package dev.tonysp.rankedpvp.data;
 import dev.tonysp.plugindata.connections.redis.RedisConnection;
 import dev.tonysp.plugindata.data.events.DataPacketReceiveEvent;
 import dev.tonysp.rankedpvp.Manager;
+import dev.tonysp.rankedpvp.Messages;
 import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.arenas.Warp;
 import dev.tonysp.rankedpvp.game.EventType;
@@ -50,7 +51,7 @@ public class DataPacketManager extends Manager {
     private String masterId;
     private String serverId;
     private boolean isMaster = true;
-    private static Set<String> otherServers = new HashSet<>();
+    private static final Set<String> otherServers = new HashSet<>();
     private static final String pluginId = "rankedpvp";
 
     public DataPacketManager (RankedPvP pluign) {
@@ -147,12 +148,12 @@ public class DataPacketManager extends Manager {
                 case GAME_ACCEPT_REMINDER ->
                         plugin.players().sendAcceptMessageToPlayer(dataPacket.getString(), dataPacket.getInteger(), false);
                 case PLAYER_MESSAGE ->
-                        plugin.players().sendMessageToPlayer(dataPacket.getUuid(), dataPacket.getString(), false);
+                        plugin.players().sendMessageToPlayer(dataPacket.getUuid(), Messages.getSerializer().deserialize(dataPacket.getString()), false);
                 case SAVE_PLAYER_LOCATION_AND_TP ->
                         plugin.players().savePlayerLocationAndTeleport(dataPacket.getUuid(), false);
                 case GAME_ACCEPT -> plugin.games().tryAcceptingGame(dataPacket.getUuid());
                 case ANNOUNCE ->
-                        plugin.players().announce(dataPacket.getString(), dataPacket.getStringList().get(0), dataPacket.getStringList().get(1), false);
+                        plugin.players().announce(Messages.getSerializer().deserialize(dataPacket.getString()), dataPacket.getStringList().get(0), dataPacket.getStringList().get(1), false);
                 case PLAYER_LOCATION -> {
                     ArenaPlayer arenaPlayer = plugin.players().getOrCreatePlayer(dataPacket.getUuid());
                     if (!plugin.games().getInProgress().containsKey(arenaPlayer))

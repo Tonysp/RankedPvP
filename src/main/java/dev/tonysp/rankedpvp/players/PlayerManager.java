@@ -37,11 +37,13 @@ import dev.tonysp.rankedpvp.data.Action;
 import dev.tonysp.rankedpvp.data.DataPacket;
 import dev.tonysp.rankedpvp.game.EventType;
 import dev.tonysp.rankedpvp.game.TwoPlayerGame;
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.chat.hover.content.Text;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.TextReplacementConfig;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
@@ -141,13 +143,15 @@ public class PlayerManager extends Manager {
         }
     }
 
-    public String getPlayerRating (int rating, int gamesPlayed) {
+    public TextComponent getPlayerRating (int rating, int gamesPlayed) {
+        String value;
         if (ranksEnabled()) {
-            Rank rank = Rank.fromRating(rating, gamesPlayed);
-            return Messages.RANK.getMessage().replaceAll("%RANK%", rank.getName());
+            value = Rank.fromRating(rating, gamesPlayed).getName();
         } else {
-            return Messages.RANK.getMessage().replaceAll("%RANK%", String.valueOf(rating));
+            value = String.valueOf(rating);
         }
+        TextReplacementConfig replacement = TextReplacementConfig.builder().match("%RANK%:").replacement(value).build();
+        return Messages.RANK.getMessage(replacement);
     }
 
     public void sendAcceptMessageToPlayer (String playerName, int timeRemaining, boolean share) {
@@ -164,15 +168,23 @@ public class PlayerManager extends Manager {
             return;
         }
 
-        BaseComponent[] components = TextComponent.fromLegacyText(Messages.CLICK_TO_TELEPORT.getMessage().replaceAll("%TIME%", Utils.secondStringRemaining(timeRemaining)));
-        for (BaseComponent component : components) {
-            component.setClickEvent( new ClickEvent( ClickEvent.Action.RUN_COMMAND, "/pvp accept" ) );
-            component.setHoverEvent( new HoverEvent( HoverEvent.Action.SHOW_TEXT, new Text( "Click!" ) ) );
-        }
-        player.spigot().sendMessage(components);
+        Messages.CLICK_TO_TELEPORT.sendTo(player.getUniqueId());
+
+        final TextComponent acceptMessage = Component
+                .text("Prefix")
+                .color(TextColor.color(25, 31, 55))
+                .append(Component.text("Accept in %TIME%", TextColor.color(0, 31, 55)))
+                //.text(Messages.CLICK_TO_TELEPORT.getMessage().replaceAll("%TIME%", Utils.secondStringRemaining(timeRemaining)))
+                .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.RUN_COMMAND, "/pvp accept"))
+                .hoverEvent(HoverEvent.showText(Component.text("Click!")))
+                ;
+        player.sendMessage(acceptMessage);
         if (ACCEPT_MESSAGE_SOUND != null) {
             player.playSound(player.getLocation(), ACCEPT_MESSAGE_SOUND, 1.0f, 1.0f);
         }
+
+        plugin.getConfig().set("testserialize", LegacyComponentSerializer.legacyAmpersand().serialize(acceptMessage));
+        plugin.saveConfig();
     }
 
     public void savePlayerLocationAndTeleport (UUID uuid, boolean share) {
@@ -212,8 +224,8 @@ public class PlayerManager extends Manager {
         }
     }
 
-    public void announce (String message, String except1, String except2, boolean share) {
-        RankedPvP.log(message);
+    public void announce (TextComponent message, String except1, String except2, boolean share) {
+        RankedPvP.log(message.content());
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player.getName().equalsIgnoreCase(except1) || player.getName().equalsIgnoreCase(except2))
                 continue;
@@ -226,18 +238,18 @@ public class PlayerManager extends Manager {
             list.add(except2);
             DataPacket.newBuilder()
                     .action(Action.ANNOUNCE)
-                    .string(message)
+                    .string(Messages.getSerializer().serialize(message))
                     .stringList(list)
                     .buildPacket()
                     .send();
         }
     }
 
-    public void announce (String message, boolean share) {
+    public void announce (TextComponent message, boolean share) {
         announce(message, "", "", share);
     }
 
-    public void sendMessageToPlayer (UUID playerUuid, String message, boolean share) {
+    public void sendMessageToPlayer (UUID playerUuid, TextComponent message, boolean share) {
         Player player = Bukkit.getPlayer(playerUuid);
         if (player != null && player.isOnline()) {
             player.sendMessage(message);
@@ -248,7 +260,7 @@ public class PlayerManager extends Manager {
             DataPacket.newBuilder()
                     .action(Action.PLAYER_MESSAGE)
                     .uuid(playerUuid)
-                    .string(message)
+                    .string(Messages.getSerializer().serialize(message))
                     .buildPacket()
                     .send();
         }
@@ -368,7 +380,7 @@ public class PlayerManager extends Manager {
 
     public void updatePlayerName (Player player) {
         Optional<ArenaPlayer> arenaPlayer = getPlayerIfExists(player.getUniqueId());
-        if (!arenaPlayer.isPresent())
+        if (arenaPlayer.isEmpty())
             return;
 
         if (!arenaPlayer.get().getName().equals(player.getName())) {
@@ -396,7 +408,7 @@ public class PlayerManager extends Manager {
             playersToWarp.remove(playerName);
         } else {
             Optional<ArenaPlayer> player = getPlayerIfExists(event.getPlayer().getUniqueId());
-            if (!player.isPresent() || !plugin.games().getInProgress().containsKey(player.get()))
+            if (player.isEmpty() || !plugin.games().getInProgress().containsKey(player.get()))
                 return;
 
             TwoPlayerGame game = (TwoPlayerGame) plugin.games().getInProgress().get(player.get());
@@ -421,7 +433,7 @@ public class PlayerManager extends Manager {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerQuitEvent (PlayerQuitEvent event) {
         Optional<ArenaPlayer> player = getPlayerIfExists(event.getPlayer().getUniqueId());
-        if (!player.isPresent() || !plugin.games().getInProgress().containsKey(player.get()))
+        if (player.isEmpty() || !plugin.games().getInProgress().containsKey(player.get()))
             return;
 
         EventType eventType = plugin.games().getInProgress().get(player.get()).getArena().eventType;

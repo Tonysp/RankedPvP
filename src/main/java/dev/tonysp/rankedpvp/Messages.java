@@ -26,9 +26,13 @@
 
 package dev.tonysp.rankedpvp;
 
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.TextReplacementConfig;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 
+import java.util.Arrays;
 import java.util.UUID;
 
 public enum Messages {
@@ -74,46 +78,84 @@ public enum Messages {
     FIVE_OR_MORE_REMAINING,
     ;
 
-    private String message;
+    private TextComponent message;
     private boolean isMessageSet = false;
 
-    public static String MESSAGES_SECTION = "messages";
+    public static final String MESSAGES_SECTION = "messages";
+    private static final LegacyComponentSerializer serializer = LegacyComponentSerializer.legacyAmpersand();
 
-    public void setMessage (String message) {
-        if (message != null
-                && !message.isEmpty()) {
-            this.message = message;
-            this.isMessageSet = true;
-        } else {
-            this.isMessageSet = false;
-        }
+    public void setMessage (TextComponent message) {
+        this.message = message;
+        this.isMessageSet = true;
     }
 
-    public String getMessage () {
-        return this.message;
+    public String getMessageContent () {
+        return this.message.content();
+    }
+
+    public TextComponent getMessage () {
+        return message;
+    }
+
+    public static LegacyComponentSerializer getSerializer () {
+        return serializer;
     }
 
     public static void loadFromConfig (FileConfiguration config) {
+        LegacyComponentSerializer serializer = LegacyComponentSerializer.legacyAmpersand();
         for (Messages message : values()) {
             String key = MESSAGES_SECTION + "." + message.toString().toLowerCase().replaceAll("_", "-");
-            message.setMessage(Utils.formatString(config.getString(key, "")));
+            String stringMessage = config.getString(key, "");
+            if (stringMessage.isEmpty())
+                continue;
+
+            message.setMessage(getSerializer().deserialize(stringMessage));
         }
     }
 
     public void sendTo (UUID playerUuid) {
-        if (!isMessageSet || getMessage().equalsIgnoreCase("")) return;
+        if (!isMessageSet)
+            return;
 
-        String message = PREFIX.getMessage() + getMessage();
-        RankedPvP.getInstance().players().sendMessageToPlayer(playerUuid, ChatColor.translateAlternateColorCodes('&', message), true);
+        TextComponent finalMessage = PREFIX.getMessage().append(getMessage());
+        RankedPvP.getInstance().players().sendMessageToPlayer(playerUuid, finalMessage, true);
     }
 
-    public void sendTo (UUID playerUuid, String...variables) {
-        if (!isMessageSet || getMessage().equalsIgnoreCase("")) return;
+    public void sendTo (UUID playerUuid, String... variables) {
+        if (!isMessageSet)
+            return;
 
-        String message = PREFIX.getMessage() + getMessage();
+        TextComponent finalMessage = PREFIX.getMessage().append(getMessage());
         for (String variable : variables) {
-            message = message.replaceAll(variable.split(":")[0], variable.split(":")[1]);
+            TextReplacementConfig replacement = TextReplacementConfig.builder().match(variable.split(":")[0]).replacement(variable.split(":")[1]).build();
+            finalMessage = (TextComponent) finalMessage.replaceText(replacement);
         }
-        RankedPvP.getInstance().players().sendMessageToPlayer(playerUuid, ChatColor.translateAlternateColorCodes('&', message), true);
+        RankedPvP.getInstance().players().sendMessageToPlayer(playerUuid, finalMessage, true);
+    }
+
+    public void sendTo (UUID playerUuid, Iterable<? extends TextReplacementConfig> replacements) {
+        if (!isMessageSet)
+            return;
+
+        TextComponent finalMessage = PREFIX.getMessage().append(getMessage());
+        for (TextReplacementConfig variable : replacements) {
+            finalMessage = (TextComponent) finalMessage.replaceText(variable);
+        }
+        RankedPvP.getInstance().players().sendMessageToPlayer(playerUuid, finalMessage, true);
+    }
+
+    public void sendTo (UUID playerUuid, TextReplacementConfig... replacements) {
+        sendTo(playerUuid, Arrays.asList(replacements));
+    }
+
+    public TextComponent getMessage (Iterable<? extends TextReplacementConfig> replacements) {
+        for (TextReplacementConfig variable : replacements) {
+            message = (TextComponent) message.replaceText(variable);
+        }
+        return message;
+    }
+
+    public TextComponent getMessage (TextReplacementConfig... replacements) {
+        return getMessage(Arrays.asList(replacements));
     }
 }

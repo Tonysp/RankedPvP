@@ -50,7 +50,7 @@ public class PlayerCommandPreprocessListener implements Listener {
             return;
 
         Optional<ArenaPlayer> arenaPlayer = RankedPvP.getInstance().players().getPlayerIfExists(player.getUniqueId());
-        if (!arenaPlayer.isPresent())
+        if (arenaPlayer.isEmpty())
             return;
 
         if (!RankedPvP.getInstance().games().getInProgress().containsKey(arenaPlayer.get()))

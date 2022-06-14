@@ -70,7 +70,7 @@ public class Warp implements Serializable, Comparable<Warp> {
                     return;
 
                 Optional<Location> location = this.getLocation();
-                if (!location.isPresent())
+                if (location.isEmpty())
                     return;
 
                 player.teleport(location.get(), PlayerTeleportEvent.TeleportCause.PLUGIN);

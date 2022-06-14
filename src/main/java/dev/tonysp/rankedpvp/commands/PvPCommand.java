@@ -36,6 +36,7 @@ import dev.tonysp.rankedpvp.game.EventType;
 import dev.tonysp.rankedpvp.game.Game;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
 import dev.tonysp.rankedpvp.players.EntityWithRating;
+import net.kyori.adventure.text.TextComponent;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -80,12 +81,12 @@ public class PvPCommand implements CommandExecutor {
             Optional<ArenaPlayer> player = plugin.players().getPlayerIfExists(args[1]);
             if (player.isPresent()) {
                 sender.sendMessage(FANCY_LINE);
-                String rank = plugin.players().getPlayerRating(player.get().getRatingVisible(), player.get().getMatches());
+                TextComponent rank = plugin.players().getPlayerRating(player.get().getRatingVisible(), player.get().getMatches());
                 sender.sendMessage(ChatColor.YELLOW + "player: " + rank + " " + ChatColor.GRAY + player.get().getName());
                 sender.sendMessage(ChatColor.YELLOW + "number of matches: " + ChatColor.GRAY + player.get().getMatches());
                 sender.sendMessage(ChatColor.YELLOW + "wins/loses/draws: " + ChatColor.GRAY + player.get().getWins() + "/" + player.get().getLosses() + "/" + player.get().getDraws());
             } else {
-                String rank = plugin.players().getPlayerRating((int) EntityWithRating.DEFAULT_RATING, 0);
+                TextComponent rank = plugin.players().getPlayerRating((int) EntityWithRating.DEFAULT_RATING, 0);
                 sender.sendMessage(ChatColor.YELLOW + "player: " + rank + " " + ChatColor.GRAY + args[1]);
                 sender.sendMessage(ChatColor.YELLOW + "number of matches: " + ChatColor.GRAY + "0");
                 sender.sendMessage(ChatColor.YELLOW + "wins/loses/draws: " + ChatColor.GRAY + "0/0/0");
@@ -115,7 +116,7 @@ public class PvPCommand implements CommandExecutor {
             }
 
             Optional<EventType> eventType = EventType.fromString(args[1]);
-            if (!eventType.isPresent()) {
+            if (eventType.isEmpty()) {
                 sender.sendMessage(ChatColor.RED + "Wrong type, specify one of these types: 1v1");
                 return true;
             }
@@ -134,7 +135,7 @@ public class PvPCommand implements CommandExecutor {
             }
 
             Optional<EventType> eventType = EventType.fromString(args[1]);
-            if (!eventType.isPresent()) {
+            if (eventType.isEmpty()) {
                 player.sendMessage(ChatColor.RED + "Wrong type, specify one of these types: 1v1");
                 return true;
             }
@@ -152,7 +153,7 @@ public class PvPCommand implements CommandExecutor {
             }
 
             Optional<EventType> eventType = EventType.fromString(args[1]);
-            if (!eventType.isPresent()) {
+            if (eventType.isEmpty()) {
                 player.sendMessage(ChatColor.RED + "Wrong type, specify one of these types: 1v1");
                 return true;
             }

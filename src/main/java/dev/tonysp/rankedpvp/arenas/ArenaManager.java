@@ -71,12 +71,8 @@ public class ArenaManager extends Manager {
                     continue;
                 }
                 String eventTypeString = arenaConfig.getString("event-type", "");
-                if (eventTypeString == null) {
-                    RankedPvP.logWarning("error while loading arena: invalid event type");
-                    continue;
-                }
                 Optional<EventType> eventType = EventType.fromString(eventTypeString);
-                if (!eventType.isPresent()) {
+                if (eventType.isEmpty()) {
                     RankedPvP.logWarning("error while loading arena: invalid event type");
                     continue;
                 }
@@ -196,7 +192,7 @@ public class ArenaManager extends Manager {
         arena.name = data.getStringList().get(2);
         arena.ranked = data.getBoolean();
         arena.teamOneWarps = data.getWarps().get("teamOne");
-        arena.teamOneWarps = data.getWarps().get("teamTwo");
+        arena.teamTwoWarps = data.getWarps().get("teamTwo");
 
         arenas.add(arena);
     }

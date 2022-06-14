@@ -29,13 +29,14 @@ package dev.tonysp.rankedpvp;
 import dev.tonysp.rankedpvp.game.EventType;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
+import net.kyori.adventure.text.Component;
 import org.bukkit.OfflinePlayer;
 
 import java.util.Optional;
 
 public class Placeholders extends PlaceholderExpansion {
 
-    private RankedPvP plugin;
+    private final RankedPvP plugin;
 
     public Placeholders (RankedPvP plugin) {
         this.plugin = plugin;
@@ -80,11 +81,11 @@ public class Placeholders extends PlaceholderExpansion {
         if (param.equalsIgnoreCase("playing-1v1-amount")) {
             return String.valueOf(plugin.games().getGames().size() * 2);
         } else if (param.equalsIgnoreCase("playing-1v1-amount-noun")) {
-            return Utils.playersString(plugin.games().getGames().size() * 2);
+            return Utils.playersString(plugin.games().getGames().size() * 2).toString();
         } else if (param.equalsIgnoreCase("queue-1v1-amount")) {
             return String.valueOf(plugin.games().getPlayerQueue().get(EventType.ONE_VS_ONE).size());
         } else if (param.equalsIgnoreCase("queue-1v1-amount-noun")) {
-            return Utils.playersString(plugin.games().getPlayerQueue().get(EventType.ONE_VS_ONE).size());
+            return Utils.playersString(plugin.games().getPlayerQueue().get(EventType.ONE_VS_ONE).size()).toString();
         } else if (param.contains("player-name-rank")) {
             int rank = Integer.parseInt(param.split("player-name-rank")[1]);
             Optional<ArenaPlayer> arenaPlayer = plugin.players().getPlayerByRank(rank);
@@ -92,12 +93,12 @@ public class Placeholders extends PlaceholderExpansion {
         } else if (param.contains("player-rating-rank")) {
             int rank = Integer.parseInt(param.split("player-rating-rank")[1]);
             Optional<ArenaPlayer> arenaPlayer = plugin.players().getPlayerByRank(rank);
-            return arenaPlayer.map(player -> plugin.players().getPlayerRating(player.getRatingVisible(), player.getMatches())).orElse("");
+            return arenaPlayer.map(player -> plugin.players().getPlayerRating(player.getRatingVisible(), player.getMatches())).orElse(Component.empty()).toString();
         } else if (param.contains("player-rating")) {
             if (offlinePlayer.getName() == null)
                 return "";
             ArenaPlayer arenaPlayer = plugin.players().getOrCreatePlayer(offlinePlayer.getUniqueId());
-            return plugin.players().getPlayerRating(arenaPlayer.getRatingVisible(), arenaPlayer.getMatches());
+            return plugin.players().getPlayerRating(arenaPlayer.getRatingVisible(), arenaPlayer.getMatches()).toString();
         }
 
         return null;

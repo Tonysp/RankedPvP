@@ -26,6 +26,8 @@
 
 package dev.tonysp.rankedpvp;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -57,37 +59,37 @@ public class Utils {
         return ChatColor.translateAlternateColorCodes('&', text);
     }
 
-    public static String secondStringRemaining (int seconds) {
-        if (seconds >= 5 || seconds == 0) {
-            return Messages.FIVE_OR_MORE_REMAINING.getMessage() + " " + secondString(seconds) + ".";
-        } else if (seconds >= 2) {
-            return Messages.TWO_TO_FOUR_REMAINING.getMessage() + " " + secondString(seconds) + ".";
+    public static TextComponent remainingString (int amount) {
+        if (amount >= 5 || amount == 0) {
+            return Messages.FIVE_OR_MORE_REMAINING.getMessage();
+        } else if (amount >= 2) {
+            return Messages.TWO_TO_FOUR_REMAINING.getMessage();
         } else {
-            return Messages.ONE_REMAINING.getMessage() + " " + secondString(seconds) + ".";
+            return Messages.ONE_REMAINING.getMessage();
         }
     }
 
-    public static String secondString (int seconds) {
+    public static TextComponent secondString (int seconds) {
         if (seconds >= 5 || seconds == 0) {
-            return seconds + " " + Messages.FIVE_OR_MORE_SECONDS.getMessage();
+            return Component.text(seconds).append(Component.text(" ")).append(Messages.FIVE_OR_MORE_SECONDS.getMessage());
         } else if (seconds >= 2) {
-            return seconds + " " + Messages.TWO_TO_FOUR_SECONDS.getMessage();
+            return Component.text(seconds).append(Component.text(" ")).append(Messages.TWO_TO_FOUR_SECONDS.getMessage());
         } else {
-            return seconds + " " + Messages.ONE_SECOND.getMessage();
+            return Component.text(seconds).append(Component.text(" ")).append(Messages.ONE_SECOND.getMessage());
         }
     }
 
-    public static String minutesString (int minutes) {
+    public static TextComponent minutesString (int minutes) {
         if (minutes >= 5 || minutes == 0) {
-            return minutes + " " + Messages.FIVE_OR_MORE_MINUTES.getMessage();
+            return Component.text(minutes).append(Component.text(" ")).append(Messages.FIVE_OR_MORE_MINUTES.getMessage());
         } else if (minutes >= 2) {
-            return minutes + " " + Messages.TWO_TO_FOUR_MINUTES.getMessage();
+            return Component.text(minutes).append(Component.text(" ")).append(Messages.TWO_TO_FOUR_MINUTES.getMessage());
         } else {
-            return minutes + " " + Messages.ONE_MINUTE.getMessage();
+            return Component.text(minutes).append(Component.text(" ")).append(Messages.ONE_MINUTE.getMessage());
         }
     }
 
-    public static String playersString (int amount) {
+    public static TextComponent playersString (int amount) {
         if (amount >= 5 || amount == 0) {
             return Messages.FIVE_OR_MORE_PLAYERS.getMessage();
         } else if (amount >= 2) {

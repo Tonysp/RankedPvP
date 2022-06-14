@@ -40,6 +40,8 @@ import dev.tonysp.rankedpvp.arenas.Warp;
 import dev.tonysp.rankedpvp.data.Action;
 import dev.tonysp.rankedpvp.data.DataPacket;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.TextReplacementConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
@@ -151,7 +153,7 @@ public class GameManager extends Manager {
         //PvPArena.log("game starting");
 
         Optional<Arena> arena = plugin.arenas().getAndLockFreeArena(eventType);
-        if (!arena.isPresent()) {
+        if (arena.isEmpty()) {
             //PvPArena.log("no arena available");
             if (checkQueue.containsKey(eventType) && checkQueue.get(eventType) < 3) {
                 checkQueue.put(eventType, 3);
@@ -196,7 +198,6 @@ public class GameManager extends Manager {
     }
 
     public void gameEnded (TwoPlayerGame game, int winnerId) {
-        //PvPArena.log("game ended calculations win: " + winnerId);
         de.gesundkrank.jskills.Player<ArenaPlayer> player1 = new de.gesundkrank.jskills.Player<>(game.playerOne);
         de.gesundkrank.jskills.Player<ArenaPlayer> player2 = new de.gesundkrank.jskills.Player<>(game.playerTwo);
         Team team1 = new Team(player1, new Rating(player1.getId().getRating(), player1.getId().getDeviation()));
@@ -209,16 +210,14 @@ public class GameManager extends Manager {
         double player2OldRatingDouble = player2.getId().getRating();
         double player1OldDeviation = player1.getId().getDeviation();
         double player2OldDeviation = player2.getId().getDeviation();
-        int player1OldRating = player1.getId().getRatingRound();
-        int player2OldRating = player2.getId().getRatingRound();
         int player1OldRatingVisible = player1.getId().getRatingVisible();
         int player2OldRatingVisible = player2.getId().getRatingVisible();
         int player1OldMatches = player1.getId().getMatches();
         int player2OldMatches = player2.getId().getMatches();
 
-        String announceMessageNotDraw = Messages.ANNOUNCE_NOT_DRAW.getMessage();
-        String announceMessageDraw = Messages.ANNOUNCE_DRAW.getMessage();
-        String winnerAnnounce, loserAnnounce, announceMessage;
+        Messages announceMessageNotDraw = Messages.ANNOUNCE_NOT_DRAW;
+        Messages announceMessageDraw = Messages.ANNOUNCE_DRAW;
+        TextComponent winnerAnnounce, loserAnnounce, announceMessage;
 
         TwoPlayerTrueSkillCalculator calculator = new TwoPlayerTrueSkillCalculator();
         Map<IPlayer, Rating> newRatings;
@@ -255,31 +254,22 @@ public class GameManager extends Manager {
         player2.getId().addMatchToHistory(result);
         plugin.database().insertMatchResult(result);
 
-        int winnerOldRating, loserOldRating, winnerOldRatingVisible, loserOldRatingVisible, winnerOldMatches, loserOldMatches;
-        double winnerOldRatingDouble, loserOldRatingDouble;
+        int winnerOldRatingVisible, loserOldRatingVisible, winnerOldMatches, loserOldMatches;
         Player<ArenaPlayer> winner, loser;
 
         if (winnerId == player1.getId().getId() || player1OldRatingDouble < player1NewRating.getMean()) {
-            winnerOldRating = player1OldRating;
             winnerOldRatingVisible = player1OldRatingVisible;
-            winnerOldRatingDouble = player1OldRatingDouble;
             winnerOldMatches = player1OldMatches;
             loserOldMatches = player2OldMatches;
             winner = player1;
-            loserOldRating = player2OldRating;
             loserOldRatingVisible = player2OldRatingVisible;
-            loserOldRatingDouble = player2OldRatingDouble;
             loser = player2;
         } else if (winnerId == player2.getId().getId() || player2OldRatingDouble < player2NewRating.getMean()) {
-            winnerOldRating = player2OldRating;
             winnerOldRatingVisible = player2OldRatingVisible;
-            winnerOldRatingDouble = player2OldRatingDouble;
             winnerOldMatches = player2OldMatches;
             loserOldMatches = player1OldMatches;
             winner = player2;
-            loserOldRating = player1OldRating;
             loserOldRatingVisible = player1OldRatingVisible;
-            loserOldRatingDouble = player1OldRatingDouble;
             loser = player1;
         } else {
             return;
@@ -289,60 +279,61 @@ public class GameManager extends Manager {
         winnerAnnounce = winner.getId().getNameWithRatingAndChange(winnerRatingDiff);
         double loserRatingDiff = loser.getId().getRatingVisible() - loserOldRatingVisible;
         loserAnnounce = loser.getId().getNameWithRatingAndChange(loserRatingDiff);
-        String winnerOldRank = plugin.players().getPlayerRating(winnerOldRatingVisible, winnerOldMatches);
-        String winnerNewRank = plugin.players().getPlayerRating(winner.getId().getRatingVisible(), winner.getId().getMatches());
-        String loserOldRank = plugin.players().getPlayerRating(loserOldRatingVisible, loserOldMatches);
-        String loserNewRank = plugin.players().getPlayerRating(loser.getId().getRatingVisible(), loser.getId().getMatches());
-        boolean winnerRankChanged = !winnerOldRank.equalsIgnoreCase(winnerNewRank);
-        boolean loserRankChanged = !loserOldRank.equalsIgnoreCase(loserNewRank);
+        TextComponent winnerOldRank = plugin.players().getPlayerRating(winnerOldRatingVisible, winnerOldMatches);
+        TextComponent winnerNewRank = plugin.players().getPlayerRating(winner.getId().getRatingVisible(), winner.getId().getMatches());
+        TextComponent loserOldRank = plugin.players().getPlayerRating(loserOldRatingVisible, loserOldMatches);
+        TextComponent loserNewRank = plugin.players().getPlayerRating(loser.getId().getRatingVisible(), loser.getId().getMatches());
+        boolean winnerRankChanged = !winnerOldRank.toString().equalsIgnoreCase(winnerNewRank.toString());
+        boolean loserRankChanged = !loserOldRank.toString().equalsIgnoreCase(loserNewRank.toString());
 
-        String winnerMessage, loserMessage, drawMessage1, drawMessage2;
+        Messages winnerMessage, loserMessage, drawMessage1, drawMessage2;
         if (winnerRankChanged) {
-            winnerMessage = Messages.WIN_MESSAGE_CHANGE.getMessage();
-            drawMessage1 = Messages.DRAW_MESSAGE_CHANGE.getMessage();
+            winnerMessage = Messages.WIN_MESSAGE_CHANGE;
+            drawMessage1 = Messages.DRAW_MESSAGE_CHANGE;
         } else {
-            winnerMessage = Messages.WIN_MESSAGE.getMessage();
-            drawMessage1 = Messages.DRAW_MESSAGE.getMessage();
+            winnerMessage = Messages.WIN_MESSAGE;
+            drawMessage1 = Messages.DRAW_MESSAGE;
         }
         if (loserRankChanged) {
-            loserMessage = Messages.LOSE_MESSAGE_CHANGE.getMessage();
-            drawMessage2 = Messages.DRAW_MESSAGE_CHANGE.getMessage();
+            loserMessage = Messages.LOSE_MESSAGE_CHANGE;
+            drawMessage2 = Messages.DRAW_MESSAGE_CHANGE;
         } else {
-            loserMessage = Messages.LOSE_MESSAGE.getMessage();
-            drawMessage2 = Messages.DRAW_MESSAGE.getMessage();
+            loserMessage = Messages.LOSE_MESSAGE;
+            drawMessage2 = Messages.DRAW_MESSAGE;
         }
 
-        winnerMessage = winnerMessage.replaceAll("%OLD%", winnerOldRank)
-                .replaceAll("%NEW%", winnerNewRank);
-        loserMessage = loserMessage.replaceAll("%OLD%", loserOldRank)
-                .replaceAll("%NEW%", loserNewRank);
-        drawMessage1 = drawMessage1.replaceAll("%OLD%", winnerOldRank)
-                .replaceAll("%NEW%", winnerNewRank);
-        drawMessage2 = drawMessage2.replaceAll("%OLD%", loserOldRank)
-                .replaceAll("%NEW%", loserNewRank);
+        List<TextReplacementConfig> winnerReplacement = new ArrayList<>();
+        List<TextReplacementConfig> loserReplacement = new ArrayList<>();
+        List<TextReplacementConfig> announceReplacement = new ArrayList<>();
+        winnerReplacement.add(TextReplacementConfig.builder().match("%OLD%:").replacement(winnerOldRank).build());
+        winnerReplacement.add(TextReplacementConfig.builder().match("%NEW%:").replacement(winnerNewRank).build());
+        loserReplacement.add(TextReplacementConfig.builder().match("%OLD%:").replacement(loserOldRank).build());
+        loserReplacement.add(TextReplacementConfig.builder().match("%NEW%:").replacement(loserNewRank).build());
+        announceReplacement.add(TextReplacementConfig.builder().match("%WINNER%:").replacement(winnerAnnounce).build());
+        announceReplacement.add(TextReplacementConfig.builder().match("%LOSER%:").replacement(loserAnnounce).build());
 
 
         if (winnerId != player1.getId().getId()
                 && winnerId != player2.getId().getId()) {
-            announceMessage = announceMessageDraw.replaceAll("%WINNER%", winnerAnnounce).replaceAll("%LOSER%", loserAnnounce);
+            announceMessage = announceMessageDraw.getMessage(announceReplacement);
             winnerMessage = drawMessage1;
             loserMessage = drawMessage2;
         } else {
-            announceMessage = announceMessageNotDraw.replaceAll("%WINNER%", winnerAnnounce).replaceAll("%LOSER%", loserAnnounce);
+            announceMessage = announceMessageNotDraw.getMessage(announceReplacement);
         }
 
-        final String winnerMessageFinal = winnerMessage;
-        final String loserMessageFinal = loserMessage;
+        final Messages winnerMessageFinal = winnerMessage;
+        final Messages loserMessageFinal = loserMessage;
         Bukkit.getScheduler().scheduleSyncDelayedTask(RankedPvP.getInstance(), () -> {
-            plugin.players().sendMessageToPlayer(winner.getId().getUuid(), winnerMessageFinal, true);
-            plugin.players().sendMessageToPlayer(loser.getId().getUuid(), loserMessageFinal, true);
+            winnerMessageFinal.sendTo(winner.getId().getUuid(), winnerReplacement);
+            loserMessageFinal.sendTo(loser.getId().getUuid(), loserReplacement);
         }, 60);
 
 
         plugin.database().updatePlayer(player1.getId());
         plugin.database().updatePlayer(player2.getId());
 
-        final String announceMessageFinal = announceMessage;
+        final TextComponent announceMessageFinal = announceMessage;
         Bukkit.getScheduler().scheduleSyncDelayedTask(RankedPvP.getInstance(), () -> {
             plugin.players().announce(announceMessageFinal, true);
         }, 60L);
@@ -375,7 +366,6 @@ public class GameManager extends Manager {
 
         TwoPlayerGame game = (TwoPlayerGame) waitingForAccept.get(arenaPlayer);
         waitingForAccept.remove(arenaPlayer);
-        String messageIfOtherDidntAccept = Messages.ACCEPTED.getMessage();
         ArenaPlayer other = game.getOtherPlayer(arenaPlayer);
         if (game.playerOne.equals(arenaPlayer)) {
             game.oneAccepted = true;
@@ -383,7 +373,7 @@ public class GameManager extends Manager {
             game.twoAccepted = true;
         }
         if (waitingForAccept.containsKey(other)) {
-            plugin.players().sendMessageToPlayer(arenaPlayer.getUuid(), messageIfOtherDidntAccept, true);
+            Messages.ACCEPTED.sendTo(arenaPlayer.getUuid());
         } else {
             inProgress.put(game.playerOne, game);
             inProgress.put(game.playerTwo, game);

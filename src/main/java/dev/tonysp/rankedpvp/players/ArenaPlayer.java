@@ -29,6 +29,9 @@ package dev.tonysp.rankedpvp.players;
 import dev.tonysp.rankedpvp.Messages;
 import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.game.MatchResult;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.TextReplacementConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.attribute.Attribute;
@@ -48,7 +51,7 @@ import java.util.UUID;
 public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWithRating>, Serializable {
 
     private String name;
-    private UUID uuid;
+    private final UUID uuid;
     private transient ItemStack[] inventoryBackup, arenaInventoryBackup;
     private transient Collection<PotionEffect> statusEffectBackup, arenaStatusEffectBackup;
     private int timeInQueue = 0;
@@ -81,11 +84,11 @@ public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWi
         return uuid;
     }
 
-    public String getNameWithRating () {
-        return name + " " + getRatingColored();
+    public TextComponent getNameWithRating () {
+        return Component.text(name).append(Component.text("")).append(getRatingColored());
     }
 
-    public String getRatingColored () {
+    public TextComponent getRatingColored () {
         return RankedPvP.getInstance().players().getPlayerRating(getRatingVisible(), getMatches());
     }
 
@@ -196,9 +199,9 @@ public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWi
         recalculateVisibleRatingCoefficient();
     }
 
-    public String getNameWithRatingAndChange (double change) {
+    public TextComponent getNameWithRatingAndChange (double change) {
         if (RankedPvP.getInstance().players().ranksEnabled()) {
-            return getNameWithRating() + ChatColor.RESET;
+            return getNameWithRating();
         }
 
         Messages message = Messages.RATING_DIFF_POSITIVE;
@@ -216,7 +219,8 @@ public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWi
             changeString = df.format(change);
         }
 
-        return getNameWithRating() + message.getMessage().replaceAll("%AMOUNT%", changeString) + ChatColor.RESET;
+        TextReplacementConfig replacement = TextReplacementConfig.builder().match("%AMOUNT%:").replacement(changeString).build();
+        return getNameWithRating().append(message.getMessage(replacement));
     }
 
     public void heal () {

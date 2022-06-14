@@ -31,6 +31,8 @@ import dev.tonysp.rankedpvp.Utils;
 import dev.tonysp.rankedpvp.arenas.Arena;
 import dev.tonysp.rankedpvp.arenas.Warp;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.TextReplacementConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -66,8 +68,8 @@ public class TwoPlayerGame extends Game {
             }
             timeToAccept --;
             if (timeToAccept <= 0) {
-                String message = Messages.DID_NOT_ACCEPT.getMessage();
-                String message2 = Messages.OPPONENT_DID_NOT_ACCEPT.getMessage();
+                TextComponent message = Messages.DID_NOT_ACCEPT.getMessage();
+                TextComponent message2 = Messages.OPPONENT_DID_NOT_ACCEPT.getMessage();
                 if (!oneAccepted) {
                     plugin.players().sendMessageToPlayer(playerOne.getUuid(), message, true);
                     if (twoAccepted) {
@@ -177,20 +179,16 @@ public class TwoPlayerGame extends Game {
                 return;
             }
 
-            String message = Messages.TIME_REMAINING.getMessage();
+            String timeVariable;
             if (timeRemaining % (60*4) == 0 && timeRemaining != 0) {
-                if (timeRemaining == 60*4) {
-                    message = message.replaceAll("%TIME%", "zbyva 1 minuta");
-                } else if (timeRemaining == 120*4) {
-                    message = message.replaceAll("%TIME%", "zbyvaji 2 minuty");
-                }
-                plugin.players().sendMessageToPlayer(playerOne.getUuid(), message, true);
-                plugin.players().sendMessageToPlayer(playerTwo.getUuid(), message, true);
+                TextReplacementConfig replacement = TextReplacementConfig.builder().match("%TIME%:").replacement(Utils.minutesString(timeRemaining / (60*4))).build();
+                Messages.TIME_REMAINING.sendTo(playerOne.getUuid(), replacement);
+                Messages.TIME_REMAINING.sendTo(playerTwo.getUuid(), replacement);
             }
             if (timeRemaining == 30*4) {
-                message = message.replaceAll("%TIME%", "zbyva 30 sekund");
-                plugin.players().sendMessageToPlayer(playerOne.getUuid(), message, true);
-                plugin.players().sendMessageToPlayer(playerTwo.getUuid(), message, true);
+                TextReplacementConfig replacement = TextReplacementConfig.builder().match("%TIME%:").replacement(Utils.secondString(30)).build();
+                Messages.TIME_REMAINING.sendTo(playerOne.getUuid(), replacement);
+                Messages.TIME_REMAINING.sendTo(playerTwo.getUuid(), replacement);
             }
 
             if (timeRemaining == 0) {

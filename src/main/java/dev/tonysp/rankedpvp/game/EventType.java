@@ -37,7 +37,7 @@ public enum EventType {
     ONE_VS_ONE,
     ;
 
-    private Map<ArenaPlayer, Integer> cooldowns = new HashMap<>();
+    private final Map<ArenaPlayer, Integer> cooldowns = new HashMap<>();
 
     private int cooldown = 0;
     private boolean backupInventory = false;
@@ -51,7 +51,7 @@ public enum EventType {
 
         for (String eventTypeString : eventSettings.getKeys(false)) {
             Optional<EventType> eventType = EventType.fromString(eventTypeString);
-            if (!eventType.isPresent())
+            if (eventType.isEmpty())
                 continue;
 
             String keyPrefix = "event-settings." + eventTypeString + ".";

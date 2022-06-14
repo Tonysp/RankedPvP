@@ -52,93 +52,93 @@ arenas:
 ranks:
   enabled: true
   unranked:
-    name: "#736F6EUnranked"
+    name: "&#736F6EUnranked"
     games-required-to-lose-this-rank: 10
   rank0:
-    name: "#B6B6B4Iron I"
+    name: "&#B6B6B4Iron I"
     rating: "0-699"
   rank1:
-    name: "#B6B6B4Iron II"
+    name: "&#B6B6B4Iron II"
     rating: "700-799"
   rank2:
-    name: "#B6B6B4Iron III"
+    name: "&#B6B6B4Iron III"
     rating: "800-899"
   rank3:
-    name: "#CD7F32Bronze I"
+    name: "&#CD7F32Bronze I"
     rating: "900-949"
   rank4:
-    name: "#CD7F32Bronze II"
+    name: "&#CD7F32Bronze II"
     rating: "950-999"
   rank5:
-    name: "#CD7F32Bronze III"
+    name: "&#CD7F32Bronze III"
     rating: "1000-1049"
   rank6:
-    name: "#C0C0C0Silver I"
+    name: "&#C0C0C0Silver I"
     rating: "1050-1099"
   rank7:
-    name: "#C0C0C0Silver II"
+    name: "&#C0C0C0Silver II"
     rating: "1100-1149"
   rank8:
-    name: "#C0C0C0Silver III"
+    name: "&#C0C0C0Silver III"
     rating: "1150-1199"
   rank9:
-    name: "#FDD017Gold I"
+    name: "&#FDD017Gold I"
     rating: "1200-1249"
   rank10:
-    name: "#FDD017Gold II"
+    name: "&#FDD017Gold II"
     rating: "1250-1299"
   rank11:
-    name: "#FDD017Gold III"
+    name: "&#FDD017Gold III"
     rating: "1300-1349"
   rank12:
-    name: "#E5E4E2Platinum I"
+    name: "&#E5E4E2Platinum I"
     rating: "1350-1399"
   rank13:
-    name: "#E5E4E2Platinum II"
+    name: "&#E5E4E2Platinum II"
     rating: "1400-1449"
   rank14:
-    name: "#E5E4E2Platinum III"
+    name: "&#E5E4E2Platinum III"
     rating: "1450-1499"
   rank15:
-    name: "#4EE2ECDiamond I"
+    name: "&#4EE2ECDiamond I"
     rating: "1500-1549"
   rank16:
-    name: "#4EE2ECDiamond II"
+    name: "&#4EE2ECDiamond II"
     rating: "1550-1574"
   rank17:
-    name: "#4EE2ECDiamond III"
+    name: "&#4EE2ECDiamond III"
     rating: "1575-1599"
   rank18:
-    name: "#F62217Master"
+    name: "&#F62217Master"
     rating: "1600-99999"
 
 
 messages:
-  prefix: "#625D5D[#2554C7RankedPvP#625D5D]&r "
-  win-message: "#E5E4E2You win!"
-  lose-message: "#E5E4E2You lose!"
-  draw-message: "#E5E4E2Draw!"
-  win-message-change: "#E5E4E2You win! Your rank increased: %OLD% -> %NEW%"
-  lose-message-change: "#E5E4E2You lose! Your rank decreased: %OLD% -> %NEW%"
-  draw-message-change: "#E5E4E2Draw! Your rank changed: %OLD% -> %NEW%"
+  prefix: "&#625D5D[&#2554C7RankedPvP&#625D5D]&r "
+  win-message: "&#E5E4E2You win!"
+  lose-message: "&#E5E4E2You lose!"
+  draw-message: "&#E5E4E2Draw!"
+  win-message-change: "&#E5E4E2You win! Your rank increased: %OLD% -> %NEW%"
+  lose-message-change: "&#E5E4E2You lose! Your rank decreased: %OLD% -> %NEW%"
+  draw-message-change: "&#E5E4E2Draw! Your rank changed: %OLD% -> %NEW%"
   announce-not-draw: "%WINNER% defeated %LOSER% in ranked 1v1 arena."
   announce-draw: "%WINNER% drew with %LOSER% in ranked 1v1 arena."
   rank: "&7[&6%RANK%&7]&r"
-  not-part-of-game: "#E5E4E2You are not participating in any match right now!"
-  accepted: "#E5E4E2Match accepted. You will be teleported shortly."
-  not-in-queue: "#E5E4E2You are not in a queue."
-  left-queue: "#E5E4E2You have left the queue."
-  already-waiting: "#E5E4E2You are already queued for this type of match. Wait for the opponent,\nor leave the queue with /pvp leave %EVENT%"
-  cooldown: "#E5E4E2You need to wait %TIME%."
-  wait-for-opponent: "#E5E4E2Succesfully queued! Please wait for a match."
-  did-not-accept: "#E5E4E2You failed to accept the match."
-  opponent-did-not-accept: "#E5E4E2Your opponent failed to accept."
-  battle-started: "#E5E4E2The match has begun!"
-  battle-starting-in: "#E5E4E2The match will begin in %TIME%."
-  time-remaining: "#E5E4E2%TIME% remaining to the end of the match!"
-  battle-cancelled: "#E5E4E2The match was cancelled."
-  click-to-teleport: "#E5E4E2Accept the match by clicking on this message, %TIME%"
-  opponent-not-in-arena: "#E5E4E2The opponent is not in the arena, %TIME% to the end of the match."
+  not-part-of-game: "&#E5E4E2You are not participating in any match right now!"
+  accepted: "&#E5E4E2Match accepted. You will be teleported shortly."
+  not-in-queue: "&#E5E4E2You are not in a queue."
+  left-queue: "&#E5E4E2You have left the queue."
+  already-waiting: "&#E5E4E2You are already queued for this type of match. Wait for the opponent,\nor leave the queue with /pvp leave %EVENT%"
+  cooldown: "&#E5E4E2You need to wait %TIME%."
+  wait-for-opponent: "&#E5E4E2Succesfully queued! Please wait for a match."
+  did-not-accept: "&#E5E4E2You failed to accept the match."
+  opponent-did-not-accept: "&#E5E4E2Your opponent failed to accept."
+  battle-started: "&#E5E4E2The match has begun!"
+  battle-starting-in: "&#E5E4E2The match will begin in %TIME%."
+  time-remaining: "&#E5E4E2%TIME% to the end of the match!"
+  battle-cancelled: "&#E5E4E2The match was cancelled."
+  click-to-teleport: "&#E5E4E2Accept the match by clicking on this message, %TIME%"
+  opponent-not-in-arena: "&#E5E4E2The opponent is not in the arena, %TIME% to the end of the match."
   rating-diff-positive: "&2 (+%AMOUNT%)"
   rating-diff-negative: "&4 (-%AMOUNT%)"
   one-player: "player"
