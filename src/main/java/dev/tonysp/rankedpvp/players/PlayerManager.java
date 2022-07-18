@@ -31,11 +31,11 @@ import com.google.common.io.ByteStreams;
 import dev.tonysp.rankedpvp.Manager;
 import dev.tonysp.rankedpvp.Messages;
 import dev.tonysp.rankedpvp.RankedPvP;
-import dev.tonysp.rankedpvp.Utils;
 import dev.tonysp.rankedpvp.arenas.Warp;
 import dev.tonysp.rankedpvp.data.Action;
 import dev.tonysp.rankedpvp.data.DataPacket;
 import dev.tonysp.rankedpvp.game.EventType;
+import dev.tonysp.rankedpvp.game.Game;
 import dev.tonysp.rankedpvp.game.TwoPlayerGame;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -202,17 +202,12 @@ public class PlayerManager extends Manager {
 
         if (plugin.dataPackets().isMaster()) {
             ArenaPlayer arenaPlayer = getOrCreatePlayer(uuid);
-            if (!plugin.games().getInProgress().containsKey(arenaPlayer))
+            if (!plugin.games().getPlayersInGame().containsKey(arenaPlayer))
                 return;
 
-            TwoPlayerGame game = (TwoPlayerGame) plugin.games().getInProgress().get(arenaPlayer);
-            if (game.playerOne.equals(arenaPlayer)) {
-                game.oneBackLocation = Warp.fromLocation(player.getLocation());
-                game.teleportPlayerOneToLobby();
-            } else {
-                game.twoBackLocation = Warp.fromLocation(player.getLocation());
-                game.teleportPlayerTwoToLobby();
-            }
+            Game game = plugin.games().getPlayersInGame().get(arenaPlayer);
+            arenaPlayer.setReturnLocation(Warp.fromLocation(player.getLocation()));
+            game.teleportToLobby(arenaPlayer);
         } else {
             DataPacket.newBuilder()
                     .addReceiver(plugin.dataPackets().getMasterId())
@@ -408,10 +403,10 @@ public class PlayerManager extends Manager {
             playersToWarp.remove(playerName);
         } else {
             Optional<ArenaPlayer> player = getPlayerIfExists(event.getPlayer().getUniqueId());
-            if (player.isEmpty() || !plugin.games().getInProgress().containsKey(player.get()))
+            if (player.isEmpty() || !plugin.games().getPlayersInGame().containsKey(player.get()))
                 return;
 
-            TwoPlayerGame game = (TwoPlayerGame) plugin.games().getInProgress().get(player.get());
+            TwoPlayerGame game = (TwoPlayerGame) plugin.games().getPlayersInGame().get(player.get());
             if (game.getArena().eventType.isBackupInventory()) {
                 player.get().backupInventory(false);
                 player.get().restoreInventory(true);
@@ -433,10 +428,10 @@ public class PlayerManager extends Manager {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerQuitEvent (PlayerQuitEvent event) {
         Optional<ArenaPlayer> player = getPlayerIfExists(event.getPlayer().getUniqueId());
-        if (player.isEmpty() || !plugin.games().getInProgress().containsKey(player.get()))
+        if (player.isEmpty() || !plugin.games().getPlayersInGame().containsKey(player.get()))
             return;
 
-        EventType eventType = plugin.games().getInProgress().get(player.get()).getArena().eventType;
+        EventType eventType = plugin.games().getPlayersInGame().get(player.get()).getArena().eventType;
         if (eventType.isBackupInventory()) {
             player.get().backupInventory(true);
             player.get().restoreInventory(false);

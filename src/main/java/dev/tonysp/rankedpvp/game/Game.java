@@ -29,15 +29,23 @@ package dev.tonysp.rankedpvp.game;
 import de.gesundkrank.jskills.GameInfo;
 import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.arenas.Arena;
+import dev.tonysp.rankedpvp.game.result.GameResult;
+import dev.tonysp.rankedpvp.players.ArenaPlayer;
 import dev.tonysp.rankedpvp.players.EntityWithRating;
 
-public class Game {
+import java.util.List;
 
-    protected RankedPvP plugin;
-    protected Arena arena;
+public abstract class Game {
+
+    protected final RankedPvP plugin;
+    protected final Arena arena;
+    protected final EventType eventType;
+
+    private final List<ArenaPlayer> players;
     protected GameState gameState;
     protected GameInfo gameInfo;
-    private boolean cancelled = false;
+
+    protected GameResult result;
 
     // Game ticks every 250 ms (every 5 Minecraft ticks)
     int timeRemaining = 180 * 4;
@@ -47,31 +55,45 @@ public class Game {
     int timeToStart = 5 * 4;
     int timeToStartFull = 5 * 4;
 
-    public Game (Arena arena) {
+    public Game (Arena arena, List<ArenaPlayer> players, EventType eventType) {
         this.plugin = RankedPvP.getInstance();
         this.arena = arena;
+        this.players = players;
+        this.eventType = eventType;
         this.gameState = GameState.WAITING_TO_ACCEPT;
         this.gameInfo = defaultGameInfo();
     }
 
-    public void tick () {}
+    public abstract void tick ();
 
-    public boolean isCancelled () {
-        return cancelled;
-    }
+    public abstract void endMatch ();
 
-    public void setCancelled (boolean cancelled) {
-        this.cancelled = cancelled;
+    public abstract void accepted (ArenaPlayer player);
+
+    public abstract void teleportAllPlayersToLobby ();
+
+    public abstract void processDeath (ArenaPlayer player);
+
+    public abstract void teleportToLobby (ArenaPlayer player);
+
+    public boolean shouldTick () {
+        return gameState != GameState.FAILED && gameState != GameState.ENDED;
     }
 
     public Arena getArena () {
         return arena;
     }
 
-    public void endMatch () {}
-
     public static GameInfo defaultGameInfo () {
         return new GameInfo(EntityWithRating.DEFAULT_RATING, EntityWithRating.DEFAULT_DEVIATION, EntityWithRating.DEFAULT_RATING / 6.0, EntityWithRating.DEFAULT_RATING / 300.0, 0.03);
+    }
+
+    public List<ArenaPlayer> getPlayers () {
+        return players;
+    }
+
+    public void updatePlayers () {
+        getPlayers().forEach(player -> plugin.database().updatePlayer(player));
     }
 }
 

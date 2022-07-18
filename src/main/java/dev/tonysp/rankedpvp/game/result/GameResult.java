@@ -24,40 +24,18 @@
  *
  */
 
-package dev.tonysp.rankedpvp.commands;
+package dev.tonysp.rankedpvp.game.result;
 
-import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
-import org.bukkit.ChatColor;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 
-import java.util.Optional;
+import java.util.Collection;
 
-public class PlayerCommandPreprocessListener implements Listener {
+public interface GameResult {
 
-    public PlayerCommandPreprocessListener (){
-        RankedPvP.getInstance().getServer().getPluginManager().registerEvents(this, RankedPvP.getInstance());
-    }
+    double calculateMatchQuality ();
 
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    public void onCommand (PlayerCommandPreprocessEvent event){
-        Player player = event.getPlayer();
-        if(player.isOp())
-            return;
+    boolean isDraw ();
 
-        Optional<ArenaPlayer> arenaPlayer = RankedPvP.getInstance().players().getPlayerIfExists(player.getUniqueId());
-        if (arenaPlayer.isEmpty())
-            return;
-
-        if (!RankedPvP.getInstance().games().getPlayersInGame().containsKey(arenaPlayer.get()))
-            return;
-
-        event.setCancelled(true);
-        event.setMessage("/pvp");
-        event.getPlayer().sendMessage(ChatColor.RED + "You cannot use any commands while in a match.");
-    }
+    void save (Collection<? extends ArenaPlayer> players);
 }
+

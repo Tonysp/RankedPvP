@@ -28,12 +28,12 @@ package dev.tonysp.rankedpvp.players;
 
 import dev.tonysp.rankedpvp.Messages;
 import dev.tonysp.rankedpvp.RankedPvP;
-import dev.tonysp.rankedpvp.game.MatchResult;
+import dev.tonysp.rankedpvp.arenas.Warp;
+import dev.tonysp.rankedpvp.game.result.TwoTeamGameResult;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.TextReplacementConfig;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
@@ -52,11 +52,13 @@ public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWi
 
     private String name;
     private final UUID uuid;
+    private int timeInQueue = 0;
+    private final List<TwoTeamGameResult> matchHistory = new ArrayList<>();
+    private double visibleRatingCoefficient = 1;
+
     private transient ItemStack[] inventoryBackup, arenaInventoryBackup;
     private transient Collection<PotionEffect> statusEffectBackup, arenaStatusEffectBackup;
-    private int timeInQueue = 0;
-    private final List<MatchResult> matchHistory = new ArrayList<>();
-    private double visibleRatingCoefficient = 1;
+    private transient Warp returnLocation;
 
     public ArenaPlayer (UUID uuid) {
         super();
@@ -84,6 +86,10 @@ public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWi
         return uuid;
     }
 
+    public void setReturnLocation (Warp returnLocation) {
+        this.returnLocation = returnLocation;
+    }
+
     public TextComponent getNameWithRating () {
         return Component.text(name).append(Component.text("")).append(getRatingColored());
     }
@@ -96,7 +102,7 @@ public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWi
         if (matchHistory.size() == 0) {
             return;
         }
-        double averageQuality = matchHistory.stream().mapToDouble(MatchResult::calculateMatchQuality).sum() / matchHistory.size();
+        double averageQuality = matchHistory.stream().mapToDouble(TwoTeamGameResult::calculateMatchQuality).sum() / matchHistory.size();
         double coefficient = Math.pow(averageQuality, 2.0) * (6.0 + 2.0/3.0);
         if (coefficient > 1) {
             coefficient = 1;
@@ -186,11 +192,11 @@ public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWi
         this.timeInQueue = 0;
     }
 
-    public void addMatchToHistory (MatchResult matchResult) {
-        matchHistory.add(matchResult);
-        if (matchResult.winnerTeam == getId()) {
+    public void addMatchToHistory (TwoTeamGameResult twoTeamMatchResult) {
+        matchHistory.add(twoTeamMatchResult);
+        if (twoTeamMatchResult.winnerTeam == getId()) {
             wins ++;
-        } else if (matchResult.isDraw()) {
+        } else if (twoTeamMatchResult.isDraw()) {
             draws ++;
         } else {
             losses ++;
@@ -230,6 +236,12 @@ public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWi
         AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
         if (attribute != null)
             player.setHealth(attribute.getDefaultValue());
+    }
+
+    public void warpToReturnLocation () {
+        if (returnLocation == null)
+            return;
+        returnLocation.warpPlayer(getName(), true);
     }
 }
 

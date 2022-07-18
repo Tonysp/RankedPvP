@@ -35,7 +35,7 @@ import dev.tonysp.plugindata.connections.mysql.MysqlConnection;
 import dev.tonysp.rankedpvp.Manager;
 import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.game.Game;
-import dev.tonysp.rankedpvp.game.MatchResult;
+import dev.tonysp.rankedpvp.game.result.TwoTeamGameResult;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -118,30 +118,30 @@ public class DatabaseManager extends Manager {
         return true;
     }
 
-    public ArrayList<MatchResult> loadMatchHistory() {
-        ArrayList<MatchResult> matches = new ArrayList<>();
+    public ArrayList<TwoTeamGameResult> loadMatchHistory() {
+        ArrayList<TwoTeamGameResult> matches = new ArrayList<>();
         try (Connection connection = getConnection();
              PreparedStatement sql = connection.prepareStatement("SELECT * FROM " + tablePrefix + "matches;");
              ResultSet resultSet = sql.executeQuery();
         ) {
             while (resultSet.next()) {
-                MatchResult matchResult = new MatchResult();
-                matchResult.teamOne = resultSet.getInt("team-one");
-                matchResult.teamTwo = resultSet.getInt("team-two");
-                matchResult.winnerTeam = resultSet.getInt("winner-team");
-                matchResult.arena = resultSet.getString("arena");
-                matchResult.eventType = resultSet.getString("event-type");
-                matchResult.timestamp = resultSet.getTimestamp("datetime");
-                matchResult.teamOnePreR = resultSet.getDouble("team-one-pre-rating");
-                matchResult.teamTwoPreR = resultSet.getDouble("team-two-pre-rating");;
-                matchResult.teamOnePostR = resultSet.getDouble("team-one-post-rating");
-                matchResult.teamTwoPostR = resultSet.getDouble("team-two-post-rating");
-                matchResult.teamOnePreD = resultSet.getDouble("team-one-pre-deviation");
-                matchResult.teamTwoPreD = resultSet.getDouble("team-two-pre-deviation");
-                matchResult.teamOnePostD = resultSet.getDouble("team-one-post-deviation");
-                matchResult.teamTwoPostD = resultSet.getDouble("team-two-post-deviation");
-                matchResult.quality = resultSet.getDouble("quality");
-                matches.add(matchResult);
+                TwoTeamGameResult twoTeamMatchResult = new TwoTeamGameResult();
+                twoTeamMatchResult.teamOne = resultSet.getInt("team-one");
+                twoTeamMatchResult.teamTwo = resultSet.getInt("team-two");
+                twoTeamMatchResult.winnerTeam = resultSet.getInt("winner-team");
+                twoTeamMatchResult.arena = resultSet.getString("arena");
+                twoTeamMatchResult.eventType = resultSet.getString("event-type");
+                twoTeamMatchResult.timestamp = resultSet.getTimestamp("datetime");
+                twoTeamMatchResult.teamOnePreR = resultSet.getDouble("team-one-pre-rating");
+                twoTeamMatchResult.teamTwoPreR = resultSet.getDouble("team-two-pre-rating");;
+                twoTeamMatchResult.teamOnePostR = resultSet.getDouble("team-one-post-rating");
+                twoTeamMatchResult.teamTwoPostR = resultSet.getDouble("team-two-post-rating");
+                twoTeamMatchResult.teamOnePreD = resultSet.getDouble("team-one-pre-deviation");
+                twoTeamMatchResult.teamTwoPreD = resultSet.getDouble("team-two-pre-deviation");
+                twoTeamMatchResult.teamOnePostD = resultSet.getDouble("team-one-post-deviation");
+                twoTeamMatchResult.teamTwoPostD = resultSet.getDouble("team-two-post-deviation");
+                twoTeamMatchResult.quality = resultSet.getDouble("quality");
+                matches.add(twoTeamMatchResult);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -241,7 +241,7 @@ public class DatabaseManager extends Manager {
         }
     }
 
-    public void insertMatchResult (MatchResult result){
+    public void insertMatchResult (TwoTeamGameResult result){
         Bukkit.getScheduler().runTask(RankedPvP.getInstance(), () -> {
             try (Connection connection = getConnection();
                  PreparedStatement sql = connection.prepareStatement("INSERT INTO `" + tablePrefix + "matches`(`team-one`, `team-two`, `winner-team`, `arena`, `event-type`, `datetime`, `team-one-pre-rating`, `team-two-pre-rating`, `team-one-post-rating`, `team-two-post-rating`, `team-one-pre-deviation`, `team-two-pre-deviation`, `team-one-post-deviation`, `team-two-post-deviation`, `quality`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);");

@@ -24,18 +24,22 @@
  *
  */
 
-package dev.tonysp.rankedpvp.game;
+package dev.tonysp.rankedpvp.game.result;
 
 import de.gesundkrank.jskills.GameInfo;
 import de.gesundkrank.jskills.Player;
 import de.gesundkrank.jskills.Rating;
 import de.gesundkrank.jskills.Team;
 import de.gesundkrank.jskills.trueskill.TwoPlayerTrueSkillCalculator;
+import dev.tonysp.rankedpvp.RankedPvP;
+import dev.tonysp.rankedpvp.game.Game;
+import dev.tonysp.rankedpvp.players.ArenaPlayer;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.util.Collection;
 
-public class MatchResult implements Serializable {
+public class TwoTeamGameResult implements GameResult, Serializable {
 
     public int teamOne;
     public int teamTwo;
@@ -66,6 +70,12 @@ public class MatchResult implements Serializable {
 
     public boolean isDraw () {
         return winnerTeam == -1;
+    }
+
+    @Override
+    public void save (Collection<? extends ArenaPlayer> players) {
+        players.forEach(player -> player.addMatchToHistory(this));
+        RankedPvP.getInstance().database().insertMatchResult(this);
     }
 }
 

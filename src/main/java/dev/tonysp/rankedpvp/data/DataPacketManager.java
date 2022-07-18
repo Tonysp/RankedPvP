@@ -33,6 +33,7 @@ import dev.tonysp.rankedpvp.Messages;
 import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.arenas.Warp;
 import dev.tonysp.rankedpvp.game.EventType;
+import dev.tonysp.rankedpvp.game.Game;
 import dev.tonysp.rankedpvp.game.TwoPlayerGame;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
 import org.bukkit.Bukkit;
@@ -156,17 +157,12 @@ public class DataPacketManager extends Manager {
                         plugin.players().announce(Messages.getSerializer().deserialize(dataPacket.getString()), dataPacket.getStringList().get(0), dataPacket.getStringList().get(1), false);
                 case PLAYER_LOCATION -> {
                     ArenaPlayer arenaPlayer = plugin.players().getOrCreatePlayer(dataPacket.getUuid());
-                    if (!plugin.games().getInProgress().containsKey(arenaPlayer))
+                    if (!plugin.games().getPlayersInGame().containsKey(arenaPlayer))
                         return;
-                    TwoPlayerGame game = (TwoPlayerGame) plugin.games().getInProgress().get(arenaPlayer);
+                    Game game = plugin.games().getPlayersInGame().get(arenaPlayer);
                     Warp location = dataPacket.getWarp();
-                    if (game.playerOne.equals(arenaPlayer)) {
-                        game.oneBackLocation = location;
-                        game.teleportPlayerOneToLobby();
-                    } else {
-                        game.twoBackLocation = location;
-                        game.teleportPlayerTwoToLobby();
-                    }
+                    arenaPlayer.setReturnLocation(location);
+                    game.teleportToLobby(arenaPlayer);
                 }
                 case WARP_PLAYER -> dataPacket.getWarp().warpPlayer(dataPacket.getString(), false);
                 case SERVER_ONLINE -> {
