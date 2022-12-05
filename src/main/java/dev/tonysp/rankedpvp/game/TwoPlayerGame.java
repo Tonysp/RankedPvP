@@ -78,15 +78,15 @@ public class TwoPlayerGame extends Game {
                 TextComponent message = Messages.DID_NOT_ACCEPT.getMessage();
                 TextComponent message2 = Messages.OPPONENT_DID_NOT_ACCEPT.getMessage();
                 if (!oneAccepted) {
-                    plugin.players().sendMessageToPlayer(playerOne.getUuid(), message, true);
+                    Messages.DID_NOT_ACCEPT.sendTo(playerOne.getUuid());
                     if (twoAccepted) {
-                        plugin.players().sendMessageToPlayer(playerTwo.getUuid(), message2, true);
+                        Messages.OPPONENT_DID_NOT_ACCEPT.sendTo(playerTwo.getUuid());
                     }
                 }
                 if (!twoAccepted) {
-                    plugin.players().sendMessageToPlayer(playerTwo.getUuid(), message, true);
+                    Messages.DID_NOT_ACCEPT.sendTo(playerTwo.getUuid());
                     if (oneAccepted) {
-                        plugin.players().sendMessageToPlayer(playerOne.getUuid(), message2, true);
+                        Messages.OPPONENT_DID_NOT_ACCEPT.sendTo(playerOne.getUuid());
                     }
                 }
 
@@ -128,8 +128,10 @@ public class TwoPlayerGame extends Game {
                         playerOnePlayer.playSound(playerOnePlayer.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
                     if (playerTwoPlayer != null)
                         playerTwoPlayer.playSound(playerTwoPlayer.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-                    Messages.BATTLE_STARTING_IN.sendTo(playerOne.getUuid(), "%TIME%:" + Utils.secondString(timeToStart / 4));
-                    Messages.BATTLE_STARTING_IN.sendTo(playerTwo.getUuid(), "%TIME%:" + Utils.secondString(timeToStart / 4));
+
+                    TextReplacementConfig replacement = TextReplacementConfig.builder().match("%TIME%").replacement(Utils.secondString(timeToStart / 4)).build();
+                    Messages.BATTLE_STARTING_IN.sendTo(playerOne.getUuid(), replacement);
+                    Messages.BATTLE_STARTING_IN.sendTo(playerTwo.getUuid(), replacement);
                 }
                 return;
             }
@@ -155,11 +157,12 @@ public class TwoPlayerGame extends Game {
             boolean firstInArena = arena.isInArena(playerOne);
             boolean secondInArena = arena.isInArena(playerTwo);
             if (timeRemaining % (5*4) == 0) {
+                TextReplacementConfig replacement = TextReplacementConfig.builder().match("%TIME%").replacement(Utils.secondString(oneTimeToReturn / 4)).build();
                 if (timeRemaining != 0 && !firstInArena && secondInArena) {
-                    Messages.OPPONENT_NOT_IN_ARENA.sendTo(playerTwo.getUuid(), "%TIME%:" + Utils.secondString(oneTimeToReturn / 4));
+                    Messages.OPPONENT_NOT_IN_ARENA.sendTo(playerTwo.getUuid(), replacement);
                 }
                 if (timeRemaining != 0 && !secondInArena && firstInArena) {
-                    Messages.OPPONENT_NOT_IN_ARENA.sendTo(playerOne.getUuid(), "%TIME%:" + Utils.secondString(twoTimeToReturn / 4));
+                    Messages.OPPONENT_NOT_IN_ARENA.sendTo(playerOne.getUuid(), replacement);
                 }
             }
 
@@ -188,12 +191,12 @@ public class TwoPlayerGame extends Game {
 
             String timeVariable;
             if (timeRemaining % (60*4) == 0 && timeRemaining != 0) {
-                TextReplacementConfig replacement = TextReplacementConfig.builder().match("%TIME%:").replacement(Utils.minutesString(timeRemaining / (60*4))).build();
+                TextReplacementConfig replacement = TextReplacementConfig.builder().match("%TIME%").replacement(Utils.minutesString(timeRemaining / (60*4))).build();
                 Messages.TIME_REMAINING.sendTo(playerOne.getUuid(), replacement);
                 Messages.TIME_REMAINING.sendTo(playerTwo.getUuid(), replacement);
             }
             if (timeRemaining == 30*4) {
-                TextReplacementConfig replacement = TextReplacementConfig.builder().match("%TIME%:").replacement(Utils.secondString(30)).build();
+                TextReplacementConfig replacement = TextReplacementConfig.builder().match("%TIME%").replacement(Utils.secondString(30)).build();
                 Messages.TIME_REMAINING.sendTo(playerOne.getUuid(), replacement);
                 Messages.TIME_REMAINING.sendTo(playerTwo.getUuid(), replacement);
             }
@@ -414,12 +417,12 @@ public class TwoPlayerGame extends Game {
         List<TextReplacementConfig> winnerReplacement = new ArrayList<>();
         List<TextReplacementConfig> loserReplacement = new ArrayList<>();
         List<TextReplacementConfig> announceReplacement = new ArrayList<>();
-        winnerReplacement.add(TextReplacementConfig.builder().match("%OLD%:").replacement(winnerOldRank).build());
-        winnerReplacement.add(TextReplacementConfig.builder().match("%NEW%:").replacement(winnerNewRank).build());
-        loserReplacement.add(TextReplacementConfig.builder().match("%OLD%:").replacement(loserOldRank).build());
-        loserReplacement.add(TextReplacementConfig.builder().match("%NEW%:").replacement(loserNewRank).build());
-        announceReplacement.add(TextReplacementConfig.builder().match("%WINNER%:").replacement(winnerAnnounce).build());
-        announceReplacement.add(TextReplacementConfig.builder().match("%LOSER%:").replacement(loserAnnounce).build());
+        winnerReplacement.add(TextReplacementConfig.builder().match("%OLD%").replacement(winnerOldRank).build());
+        winnerReplacement.add(TextReplacementConfig.builder().match("%NEW%").replacement(winnerNewRank).build());
+        loserReplacement.add(TextReplacementConfig.builder().match("%OLD%").replacement(loserOldRank).build());
+        loserReplacement.add(TextReplacementConfig.builder().match("%NEW%").replacement(loserNewRank).build());
+        announceReplacement.add(TextReplacementConfig.builder().match("%WINNER%").replacement(winnerAnnounce).build());
+        announceReplacement.add(TextReplacementConfig.builder().match("%LOSER%").replacement(loserAnnounce).build());
 
 
         if (winnerId != player1.getId().getId()

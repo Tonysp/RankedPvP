@@ -31,6 +31,7 @@ import com.google.common.io.ByteStreams;
 import dev.tonysp.rankedpvp.Manager;
 import dev.tonysp.rankedpvp.Messages;
 import dev.tonysp.rankedpvp.RankedPvP;
+import dev.tonysp.rankedpvp.Utils;
 import dev.tonysp.rankedpvp.arenas.Warp;
 import dev.tonysp.rankedpvp.data.Action;
 import dev.tonysp.rankedpvp.data.DataPacket;
@@ -144,13 +145,14 @@ public class PlayerManager extends Manager {
     }
 
     public TextComponent getPlayerRating (int rating, int gamesPlayed) {
-        String value;
+        String playerRating;
         if (ranksEnabled()) {
-            value = Rank.fromRating(rating, gamesPlayed).getName();
+            playerRating = Rank.fromRating(rating, gamesPlayed).getName();
         } else {
-            value = String.valueOf(rating);
+            playerRating = String.valueOf(rating);
         }
-        TextReplacementConfig replacement = TextReplacementConfig.builder().match("%RANK%:").replacement(value).build();
+        TextComponent playerRatingComponent = Messages.getSerializer().deserialize(playerRating);
+        TextReplacementConfig replacement = TextReplacementConfig.builder().match("%RANK%").replacement(playerRatingComponent).build();
         return Messages.RANK.getMessage(replacement);
     }
 
@@ -168,23 +170,19 @@ public class PlayerManager extends Manager {
             return;
         }
 
-        Messages.CLICK_TO_TELEPORT.sendTo(player.getUniqueId());
+        List<TextReplacementConfig> timeReplacement = new ArrayList<>();
+        timeReplacement.add(TextReplacementConfig.builder().match("%TIME%")
+                .replacement(Utils.secondString(timeRemaining).append(Component.text(" ")).append(Utils.remainingString(timeRemaining))).build());
+        final TextComponent message = Messages.PREFIX.getMessage().append(
+                Messages.CLICK_TO_TELEPORT.getMessage(timeReplacement)
+                        .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.RUN_COMMAND, "/pvp accept"))
+                        .hoverEvent(HoverEvent.showText(Component.text("Click!")))
+        );
 
-        final TextComponent acceptMessage = Component
-                .text("Prefix")
-                .color(TextColor.color(25, 31, 55))
-                .append(Component.text("Accept in %TIME%", TextColor.color(0, 31, 55)))
-                //.text(Messages.CLICK_TO_TELEPORT.getMessage().replaceAll("%TIME%", Utils.secondStringRemaining(timeRemaining)))
-                .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.RUN_COMMAND, "/pvp accept"))
-                .hoverEvent(HoverEvent.showText(Component.text("Click!")))
-                ;
-        player.sendMessage(acceptMessage);
+        player.sendMessage(message);
         if (ACCEPT_MESSAGE_SOUND != null) {
             player.playSound(player.getLocation(), ACCEPT_MESSAGE_SOUND, 1.0f, 1.0f);
         }
-
-        plugin.getConfig().set("testserialize", LegacyComponentSerializer.legacyAmpersand().serialize(acceptMessage));
-        plugin.saveConfig();
     }
 
     public void savePlayerLocationAndTeleport (UUID uuid, boolean share) {

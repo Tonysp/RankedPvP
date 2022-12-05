@@ -36,6 +36,7 @@ import dev.tonysp.rankedpvp.data.Action;
 import dev.tonysp.rankedpvp.data.DataPacket;
 import dev.tonysp.rankedpvp.game.result.TwoTeamGameResult;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
+import net.kyori.adventure.text.TextReplacementConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
@@ -226,6 +227,7 @@ public class GameManager extends Manager {
         }
 
         waitingForAccept.get(player).accepted(player);
+        waitingForAccept.remove(player);
     }
 
     public void toggleJoin (UUID uuid, EventType eventType) {
@@ -287,7 +289,8 @@ public class GameManager extends Manager {
         }
 
         if (eventType.isOnCooldown(arenaPlayer)) {
-            Messages.COOLDOWN.sendTo(arenaPlayer.getUuid(), "%TIME%:" + Utils.minutesString(eventType.getCooldown(arenaPlayer)));
+            TextReplacementConfig replacement = TextReplacementConfig.builder().match("%TIME%").replacement(Utils.minutesString(eventType.getCooldown(arenaPlayer))).build();
+            Messages.COOLDOWN.sendTo(arenaPlayer.getUuid(), replacement);
             return;
         }
 

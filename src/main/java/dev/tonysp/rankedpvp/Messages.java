@@ -29,7 +29,6 @@ package dev.tonysp.rankedpvp;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.TextReplacementConfig;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.Arrays;
@@ -102,7 +101,6 @@ public enum Messages {
     }
 
     public static void loadFromConfig (FileConfiguration config) {
-        LegacyComponentSerializer serializer = LegacyComponentSerializer.legacyAmpersand();
         for (Messages message : values()) {
             String key = MESSAGES_SECTION + "." + message.toString().toLowerCase().replaceAll("_", "-");
             String stringMessage = config.getString(key, "");
@@ -149,10 +147,11 @@ public enum Messages {
     }
 
     public TextComponent getMessage (Iterable<? extends TextReplacementConfig> replacements) {
+        TextComponent finalMessage = message;
         for (TextReplacementConfig variable : replacements) {
-            message = (TextComponent) message.replaceText(variable);
+            finalMessage = (TextComponent) finalMessage.replaceText(variable);
         }
-        return message;
+        return finalMessage;
     }
 
     public TextComponent getMessage (TextReplacementConfig... replacements) {

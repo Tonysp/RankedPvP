@@ -37,7 +37,7 @@ arenas:
     event-type: 1v1
     ranked: true
     region: regionName
-    # These blocks will be temporarily removed when the event starts, to release the players.
+    # These blocks will be temporarily removed when the event starts to release the players.
     lobby-door-blocks:
       - "125,25,123,world,acacia_log"
     # Multiple warps can be configured per team, one will be picked at random.
@@ -123,7 +123,7 @@ messages:
   draw-message-change: "&#E5E4E2Draw! Your rank changed: %OLD% -> %NEW%"
   announce-not-draw: "%WINNER% defeated %LOSER% in ranked 1v1 arena."
   announce-draw: "%WINNER% drew with %LOSER% in ranked 1v1 arena."
-  rank: "&7[&6%RANK%&7]&r"
+  rank: "&7[%RANK%&7]&r"
   not-part-of-game: "&#E5E4E2You are not participating in any match right now!"
   accepted: "&#E5E4E2Match accepted. You will be teleported shortly."
   not-in-queue: "&#E5E4E2You are not in a queue."

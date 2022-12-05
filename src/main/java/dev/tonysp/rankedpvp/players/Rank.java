@@ -27,7 +27,6 @@
 package dev.tonysp.rankedpvp.players;
 
 import dev.tonysp.rankedpvp.RankedPvP;
-import dev.tonysp.rankedpvp.Utils;
 import org.bukkit.configuration.ConfigurationSection;
 
 public class Rank {
@@ -56,7 +55,6 @@ public class Rank {
         if (config == null)
             return null;
         String name = config.getString("name");
-        name = Utils.formatString(name);
         int lowSkill = 0, highSkill = 0;
         if (config.getCurrentPath() != null
                 && !config.getCurrentPath().contains("unranked")) {

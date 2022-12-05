@@ -31,12 +31,16 @@ import de.gesundkrank.jskills.Player;
 import de.gesundkrank.jskills.Rating;
 import de.gesundkrank.jskills.Team;
 import de.gesundkrank.jskills.trueskill.TwoPlayerTrueSkillCalculator;
+import dev.tonysp.rankedpvp.Messages;
 import dev.tonysp.rankedpvp.RankedPvP;
+import dev.tonysp.rankedpvp.Utils;
 import dev.tonysp.rankedpvp.game.EventType;
 import dev.tonysp.rankedpvp.game.Game;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
 import dev.tonysp.rankedpvp.players.EntityWithRating;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.TextReplacementConfig;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -72,6 +76,27 @@ public class PvPCommand implements CommandExecutor {
             return true;
         }
 
+        if (args[0].equalsIgnoreCase("reload")) {
+            if (!sender.hasPermission("rankedpvp.reload")) {
+                sender.sendMessage(ChatColor.RED + "No permission!");
+                return true;
+            }
+
+            sender.sendMessage(plugin.disable());
+            sender.sendMessage(plugin.enable());
+            return true;
+        }
+
+        if (!RankedPvP.getInstance().isLoaded()) {
+            if (sender.hasPermission("rankedpvp.reload")) {
+                sender.sendMessage(ChatColor.RED + "The plugin failed to enable properly. Please check the console!");
+                sender.sendMessage(ChatColor.RED + "You can reload the plugin with /" + usedCommand + " reload");
+            } else {
+                sender.sendMessage(ChatColor.RED + "Oops! There was an error. Please contact the administrator.");
+            }
+            return true;
+        }
+
         if (args[0].equalsIgnoreCase("player")) {
             if (args.length <= 1) {
                 sender.sendMessage(ChatColor.YELLOW + "Usage: /" + usedCommand + " player [name]");
@@ -79,15 +104,26 @@ public class PvPCommand implements CommandExecutor {
             }
 
             Optional<ArenaPlayer> player = plugin.players().getPlayerIfExists(args[1]);
+            String playerName;
+            TextComponent rank;
             if (player.isPresent()) {
-                sender.sendMessage(FANCY_LINE);
-                TextComponent rank = plugin.players().getPlayerRating(player.get().getRatingVisible(), player.get().getMatches());
-                sender.sendMessage(ChatColor.YELLOW + "player: " + rank + " " + ChatColor.GRAY + player.get().getName());
+                playerName = player.get().getName();
+                rank = plugin.players().getPlayerRating(player.get().getRatingVisible(), player.get().getMatches());
+            } else {
+                playerName = args[1];
+                rank = plugin.players().getPlayerRating((int) EntityWithRating.DEFAULT_RATING, 0);
+            }
+            TextComponent rankMessage = Messages.getSerializer().deserialize(ChatColor.YELLOW + "player: %RANK% " + ChatColor.GRAY + playerName);
+            TextReplacementConfig replacement = TextReplacementConfig.builder().match("%RANK%").replacement(rank).build();
+            rankMessage = (TextComponent) rankMessage.replaceText(replacement);
+
+
+            sender.sendMessage(FANCY_LINE);
+            sender.sendMessage(rankMessage);
+            if (player.isPresent()) {
                 sender.sendMessage(ChatColor.YELLOW + "number of matches: " + ChatColor.GRAY + player.get().getMatches());
                 sender.sendMessage(ChatColor.YELLOW + "wins/loses/draws: " + ChatColor.GRAY + player.get().getWins() + "/" + player.get().getLosses() + "/" + player.get().getDraws());
             } else {
-                TextComponent rank = plugin.players().getPlayerRating((int) EntityWithRating.DEFAULT_RATING, 0);
-                sender.sendMessage(ChatColor.YELLOW + "player: " + rank + " " + ChatColor.GRAY + args[1]);
                 sender.sendMessage(ChatColor.YELLOW + "number of matches: " + ChatColor.GRAY + "0");
                 sender.sendMessage(ChatColor.YELLOW + "wins/loses/draws: " + ChatColor.GRAY + "0/0/0");
             }
@@ -183,14 +219,6 @@ public class PvPCommand implements CommandExecutor {
             TwoPlayerTrueSkillCalculator calculator = new TwoPlayerTrueSkillCalculator();
             GameInfo gameInfo = Game.defaultGameInfo();
             sender.sendMessage("Match quality: " + calculator.calculateMatchQuality(gameInfo, Team.concat(t0, t1)));
-        } else if (args[0].equalsIgnoreCase("reload")) {
-            if (!sender.hasPermission("rankedpvp.reload")) {
-                sender.sendMessage(ChatColor.RED + "No permission!");
-                return true;
-            }
-
-            sender.sendMessage(plugin.disable());
-            sender.sendMessage(plugin.enable());
         }
 
         return true;

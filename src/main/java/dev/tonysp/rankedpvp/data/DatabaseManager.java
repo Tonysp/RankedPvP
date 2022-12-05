@@ -63,7 +63,7 @@ public class DatabaseManager extends Manager {
         try {
             mysqlConnection = new MysqlConnection(connectionName, url, username, password);
         } catch (Exception exception) {
-            RankedPvP.logWarning("Error while initializing MySQL connection!");
+            RankedPvP.logWarning("Error while initializing MySQL connection! MySQL is required for the function of this plugin.");
             exception.printStackTrace();
             return false;
         }

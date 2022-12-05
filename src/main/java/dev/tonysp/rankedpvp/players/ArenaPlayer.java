@@ -225,7 +225,7 @@ public class ArenaPlayer extends EntityWithRating implements Comparable<EntityWi
             changeString = df.format(change);
         }
 
-        TextReplacementConfig replacement = TextReplacementConfig.builder().match("%AMOUNT%:").replacement(changeString).build();
+        TextReplacementConfig replacement = TextReplacementConfig.builder().match("%AMOUNT%").replacement(changeString).build();
         return getNameWithRating().append(message.getMessage(replacement));
     }
 

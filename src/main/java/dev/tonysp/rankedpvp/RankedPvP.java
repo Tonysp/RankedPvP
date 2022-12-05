@@ -45,6 +45,7 @@ import java.util.logging.Level;
 
 public class RankedPvP extends JavaPlugin {
 
+    private boolean loaded = false;
     private final PlayerManager playerManager = new PlayerManager(this);
     private final GameManager gameManager = new GameManager(this);
     private final ArenaManager arenaManager = new ArenaManager(this);
@@ -57,12 +58,12 @@ public class RankedPvP extends JavaPlugin {
 
     @Override
     public void onEnable () {
-        enable();
+        log(enable());
     }
 
     @Override
     public void onDisable () {
-        disable();
+        log(disable());
     }
 
     public String enable () {
@@ -73,21 +74,26 @@ public class RankedPvP extends JavaPlugin {
         Objects.requireNonNull(getCommand("rankedpvp")).setExecutor(pvpCommand);
         Objects.requireNonNull(getCommand("pvp")).setExecutor(pvpCommand);
 
-        if (!database().load())
-            return failed + " (database)";
+        if (!database().load()) {
+            return failed + " (database error)";
+        }
 
         database().initializeTables();
 
         Messages.loadFromConfig(getConfig());
         EventType.loadFromConfig(getConfig());
-        if (!arenas().load())
-            return failed + " (arenas)";
-        if (!players().load())
-            return failed + " (players)";
-        if (!games().load())
-            return failed + " (games)";
-        if (!dataPackets().load())
-            return failed + " (data packets)";
+        if (!arenas().load()) {
+            return failed + " (arena module error)";
+        }
+        if (!players().load()) {
+            return failed + " (player module error)";
+        }
+        if (!games().load()) {
+            return failed + " (game module error)";
+        }
+        if (!dataPackets().load()) {
+            return failed + " (data packet module error)";
+        }
 
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         new PlayerCommandPreprocessListener();
@@ -100,6 +106,7 @@ public class RankedPvP extends JavaPlugin {
         }
         dataPacketManager.shareServerOnline();
 
+        loaded = true;
         return ChatColor.GREEN + "Plugin enabled!";
     }
 
@@ -112,6 +119,7 @@ public class RankedPvP extends JavaPlugin {
         arenas().unload();
         database().unload();
 
+        loaded = false;
         return ChatColor.GREEN + "Plugin disabled!";
     }
 
@@ -144,6 +152,10 @@ public class RankedPvP extends JavaPlugin {
     public static void logDebug (String text) {
         if (getInstance().getConfig().getBoolean("debug", false))
             Bukkit.getLogger().log(Level.INFO, "[RankedPvP Debug] " + text);
+    }
+
+    public boolean isLoaded () {
+        return loaded;
     }
 
     public PlayerManager players () {
