@@ -86,10 +86,14 @@ public class Arena {
             return false;
         }
 
-        RegionManager manager = WorldGuard.getInstance().getPlatform().getRegionContainer().get(BukkitAdapter.adapt(player.getLocation().getWorld()));
+        return isLocationInArena(player.getLocation());
+    }
+
+    public boolean isLocationInArena (Location location) {
+        RegionManager manager = WorldGuard.getInstance().getPlatform().getRegionContainer().get(BukkitAdapter.adapt(location.getWorld()));
         if (manager == null)
             return false;
-        ApplicableRegionSet set = manager.getApplicableRegions(BukkitAdapter.asBlockVector(player.getLocation()));
+        ApplicableRegionSet set = manager.getApplicableRegions(BukkitAdapter.asBlockVector(location));
         for (ProtectedRegion each : set)
             if (each.getId().equalsIgnoreCase(region))
                 return true;

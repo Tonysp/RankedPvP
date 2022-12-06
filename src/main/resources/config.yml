@@ -15,6 +15,7 @@ mysql:
   password: 'password'
   table-prefix: "rankedpvp_"
 
+# x,y,z,yaw,pitch,world
 spawn: "125,25,123,20.5,15.1,world"
 
 accept-sound: "UI_BUTTON_CLICK"
@@ -40,7 +41,7 @@ arenas:
     # These blocks will be temporarily removed when the event starts to release the players.
     lobby-door-blocks:
       - "125,25,123,world,acacia_log"
-    # Multiple warps can be configured per team, one will be picked at random.
+    # Multiple warps can be configured per team, one will be picked at random.  "x,y,z,yaw,pitch,world"
     team-one-warps:
       - "125,25,123,0,0,world"
       - "125,25,123,0,0,world"

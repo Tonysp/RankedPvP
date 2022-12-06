@@ -90,6 +90,11 @@ public class GameManager extends Manager {
             }
         });
 
+        if (location.isEmpty()) {
+            RankedPvP.logWarning("error while loading global spawn point: invalid location");
+            return false;
+        }
+
         if (plugin.dataPackets().isMaster()) {
             ArrayList<TwoTeamGameResult> matchHistory = plugin.database().loadMatchHistory();
             for (TwoTeamGameResult twoTeamMatchResult : matchHistory) {

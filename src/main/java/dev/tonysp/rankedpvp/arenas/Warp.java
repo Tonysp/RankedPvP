@@ -116,6 +116,7 @@ public class Warp implements Serializable, Comparable<Warp> {
         warp.yaw = location.getYaw();
         warp.pitch = location.getPitch();
         warp.server = RankedPvP.getInstance().dataPackets().getServerId();
+        warp.location = location;
         return warp;
     }
 

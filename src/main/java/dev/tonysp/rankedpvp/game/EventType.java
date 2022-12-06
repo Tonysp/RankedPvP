@@ -81,7 +81,7 @@ public enum EventType {
 
     public void runStartCommands (String playerName) {
         for (String command : startCommands) {
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command.replaceAll("%PLAYER%", playerName));
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command.replaceAll("%PLAYER%", playerName).replaceAll("%player%", playerName));
         }
     }
 

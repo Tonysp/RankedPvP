@@ -83,6 +83,11 @@ public class ArenaManager extends Manager {
 
                 String regionName = arenaConfig.getString("region", "");
 
+                if (regionName.isEmpty()) {
+                    RankedPvP.logWarning("error while loading arena: WorldGuard region name must be specified");
+                    return false;
+                }
+
                 List<String> teamOneWarpsStrings = arenaConfig.getStringList("team-one-warps");
                 List<Warp> teamOneWarps = loadWarps(teamOneWarpsStrings);
                 if (teamOneWarps.isEmpty()) {
@@ -120,6 +125,11 @@ public class ArenaManager extends Manager {
                     continue;
 
                 Arena arena = new Arena(name, eventType.get(), teamOneWarps, teamTwoWarps, regionName, isRanked);
+                if (!arena.teamOneWarps.stream().allMatch(warp -> arena.isLocationInArena(warp.location))
+                        || !arena.teamTwoWarps.stream().allMatch(warp -> arena.isLocationInArena(warp.location))) {
+                    RankedPvP.logWarning("error while loading arena: warps must be inside the arena region");
+                    continue;
+                }
                 arena.lobbyDoorBlocks = lobbyDoorBlocks;
                 arenas.add(arena);
             }

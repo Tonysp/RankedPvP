@@ -108,11 +108,22 @@ public class Utils {
         Location location;
         try {
             String[] parts = locationString.split(",");
-            World world = Bukkit.getWorld(parts[5]);
+            World world;
+
+            float yaw = 0, pitch = 0;
+            if (parts.length >= 6) {
+                yaw = Float.parseFloat(parts[3]);
+                pitch = Float.parseFloat(parts[4]);
+                world = Bukkit.getWorld(parts[5]);
+            } else {
+                world = Bukkit.getWorld(parts[3]);
+            }
+
             if (world == null) {
                 return Optional.empty();
             }
-            location = new Location(world, Double.parseDouble(parts[0]), Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), Float.parseFloat(parts[3]), Float.parseFloat(parts[4]));
+
+            location = new Location(world, Double.parseDouble(parts[0]), Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), yaw, pitch);
         } catch (Exception e) {
             e.printStackTrace();
             return Optional.empty();
