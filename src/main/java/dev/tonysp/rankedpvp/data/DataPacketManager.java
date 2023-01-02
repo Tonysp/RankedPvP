@@ -34,7 +34,6 @@ import dev.tonysp.rankedpvp.RankedPvP;
 import dev.tonysp.rankedpvp.arenas.Warp;
 import dev.tonysp.rankedpvp.game.EventType;
 import dev.tonysp.rankedpvp.game.Game;
-import dev.tonysp.rankedpvp.game.TwoPlayerGame;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -86,7 +85,14 @@ public class DataPacketManager extends Manager {
 
         // Initialize DataPacketManager
         serverId = config.getString("cross-server-settings.bungeecord-server-name", "");
-        dataPacketManager = new dev.tonysp.plugindata.data.DataPacketManager(RankedPvP.getInstance(), redisConnection, "RankedPvP", serverId, dev.tonysp.plugindata.data.DataPacketManager.DEFAULT_PACKET_SEND_RECEIVE_INTERVAL, dev.tonysp.plugindata.data.DataPacketManager.DEFAULT_CLEAR_OLD_PACKETS);
+        dataPacketManager = new dev.tonysp.plugindata.data.DataPacketManager(
+                RankedPvP.getInstance(),
+                redisConnection,
+                "RankedPvP",
+                serverId,
+                dev.tonysp.plugindata.data.DataPacketManager.DEFAULT_PACKET_SEND_RECEIVE_INTERVAL,
+                dev.tonysp.plugindata.data.DataPacketManager.DEFAULT_CLEAR_OLD_PACKETS
+        );
 
         RankedPvP.getInstance().getServer().getPluginManager().registerEvents(this, RankedPvP.getInstance());
 
@@ -154,7 +160,12 @@ public class DataPacketManager extends Manager {
                         plugin.players().savePlayerLocationAndTeleport(dataPacket.getUuid(), false);
                 case GAME_ACCEPT -> plugin.games().tryAcceptingGame(dataPacket.getUuid());
                 case ANNOUNCE ->
-                        plugin.players().announce(Messages.getSerializer().deserialize(dataPacket.getString()), dataPacket.getStringList().get(0), dataPacket.getStringList().get(1), false);
+                        plugin.players().announce(Messages.getSerializer().deserialize(
+                                dataPacket.getString()),
+                                dataPacket.getStringList().get(0),
+                                dataPacket.getStringList().get(1),
+                                false
+                        );
                 case PLAYER_LOCATION -> {
                     ArenaPlayer arenaPlayer = plugin.players().getOrCreatePlayer(dataPacket.getUuid());
                     if (!plugin.games().getPlayersInGame().containsKey(arenaPlayer))

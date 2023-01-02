@@ -294,7 +294,9 @@ public class GameManager extends Manager {
         }
 
         if (eventType.isOnCooldown(arenaPlayer)) {
-            TextReplacementConfig replacement = TextReplacementConfig.builder().match("%TIME%").replacement(Utils.minutesString(eventType.getCooldown(arenaPlayer))).build();
+            TextReplacementConfig replacement = TextReplacementConfig.builder().match("%TIME%")
+                    .replacement(Utils.minutesString(eventType.getCooldown(arenaPlayer)))
+                    .build();
             Messages.COOLDOWN.sendTo(arenaPlayer.getUuid(), replacement);
             return;
         }
@@ -344,12 +346,17 @@ public class GameManager extends Manager {
         Optional<ArenaPlayer> attacker = plugin.players().getPlayerIfExists(event.getDamager().getUniqueId());
         Optional<ArenaPlayer> defender = plugin.players().getPlayerIfExists(event.getEntity().getUniqueId());
 
+        // Cancel attack if players are not in the same game
         if (attacker.isPresent() && playersInGame.containsKey(attacker.get())) {
-            if (defender.isEmpty() || !playersInGame.containsKey(defender.get()) || !playersInGame.get(attacker.get()).equals(playersInGame.get(defender.get()))) {
+            if (defender.isEmpty()
+                    || !playersInGame.containsKey(defender.get())
+                    || !playersInGame.get(attacker.get()).equals(playersInGame.get(defender.get()))) {
                 event.setCancelled(true);
             }
         } else if (defender.isPresent() && playersInGame.containsKey(defender.get())) {
-            if (attacker.isEmpty() || !playersInGame.containsKey(attacker.get()) || !playersInGame.get(defender.get()).equals(playersInGame.get(attacker.get()))) {
+            if (attacker.isEmpty()
+                    || !playersInGame.containsKey(attacker.get())
+                    || !playersInGame.get(defender.get()).equals(playersInGame.get(attacker.get()))) {
                 event.setCancelled(true);
             }
         }

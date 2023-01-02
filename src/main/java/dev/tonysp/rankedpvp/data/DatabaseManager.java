@@ -44,8 +44,6 @@ import java.sql.*;
 import java.util.*;
 
 public class DatabaseManager extends Manager {
-
-    private String tablePrefix;
     private MysqlConnection mysqlConnection;
 
     public DatabaseManager (RankedPvP plugin) {
@@ -84,13 +82,12 @@ public class DatabaseManager extends Manager {
     }
 
     public void initializeTables(){
-        tablePrefix = RankedPvP.getInstance().getConfig().getString("mysql.table-prefix", "rankedpvp_");
         try (Connection connection = getConnection()) {
-            PreparedStatement sql = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `" + tablePrefix + "players` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT,`name` varchar(16) NOT NULL,`uuid` varchar(36) NOT NULL,`rating` double NOT NULL,`deviation` double NOT NULL,`visible_rating` double NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;");
+            PreparedStatement sql = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `rankedpvp_players` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT,`name` varchar(16) NOT NULL,`uuid` varchar(36) NOT NULL,`rating` double NOT NULL,`deviation` double NOT NULL,`visible_rating` double NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;");
             sql.executeUpdate();
             sql.close();
 
-            sql = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `" + tablePrefix + "matches` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT,`team-one` int(10) unsigned NOT NULL,`team-two` int(10) unsigned NOT NULL,`winner-team` int(10),`arena` varchar(30) NOT NULL,`event-type` varchar(20) NOT NULL,`datetime` datetime,`team-one-pre-rating` double NOT NULL,`team-two-pre-rating` double NOT NULL,`team-one-post-rating` double NOT NULL,`team-two-post-rating` double NOT NULL,`team-one-pre-deviation` double NOT NULL,`team-two-pre-deviation` double NOT NULL,`team-one-post-deviation` double NOT NULL,`team-two-post-deviation` double NOT NULL,`quality` double NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;");
+            sql = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `rankedpvp_matches` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT,`team-one` int(10) unsigned NOT NULL,`team-two` int(10) unsigned NOT NULL,`winner-team` int(10),`arena` varchar(30) NOT NULL,`event-type` varchar(20) NOT NULL,`datetime` datetime,`team-one-pre-rating` double NOT NULL,`team-two-pre-rating` double NOT NULL,`team-one-post-rating` double NOT NULL,`team-two-post-rating` double NOT NULL,`team-one-pre-deviation` double NOT NULL,`team-two-pre-deviation` double NOT NULL,`team-one-post-deviation` double NOT NULL,`team-two-post-deviation` double NOT NULL,`quality` double NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;");
             sql.executeUpdate();
             sql.close();
         } catch (Exception e) {
@@ -101,7 +98,7 @@ public class DatabaseManager extends Manager {
     public boolean loadPlayers(final Map<UUID, ArenaPlayer> players) {
         players.clear();
         try (Connection connection = getConnection();
-             PreparedStatement sql = connection.prepareStatement("SELECT * FROM " + tablePrefix + "players;");
+             PreparedStatement sql = connection.prepareStatement("SELECT * FROM `rankedpvp_players`;");
              ResultSet resultSet = sql.executeQuery();
         ) {
             while (resultSet.next()) {
@@ -121,7 +118,7 @@ public class DatabaseManager extends Manager {
     public ArrayList<TwoTeamGameResult> loadMatchHistory() {
         ArrayList<TwoTeamGameResult> matches = new ArrayList<>();
         try (Connection connection = getConnection();
-             PreparedStatement sql = connection.prepareStatement("SELECT * FROM " + tablePrefix + "matches;");
+             PreparedStatement sql = connection.prepareStatement("SELECT * FROM `rankedpvp_matches`;");
              ResultSet resultSet = sql.executeQuery();
         ) {
             while (resultSet.next()) {
@@ -153,7 +150,7 @@ public class DatabaseManager extends Manager {
     public void insertPlayer (ArenaPlayer player){
         Bukkit.getScheduler().runTask(RankedPvP.getInstance(), () -> {
             try (Connection connection = getConnection();
-                 PreparedStatement sql = connection.prepareStatement("INSERT INTO " + tablePrefix + "players (name, uuid, rating, deviation, visible_rating) VALUES (?,?,?,?,?);", Statement.RETURN_GENERATED_KEYS);
+                 PreparedStatement sql = connection.prepareStatement("INSERT INTO `rankedpvp_players` (name, uuid, rating, deviation, visible_rating) VALUES (?,?,?,?,?);", Statement.RETURN_GENERATED_KEYS);
             ) {
                 sql.setString(1, player.getName());
                 sql.setString(2, player.getUuid().toString());
@@ -175,7 +172,7 @@ public class DatabaseManager extends Manager {
 
     public void showQualities (){
         try (Connection connection = getConnection();
-             PreparedStatement sql = connection.prepareStatement("SELECT * FROM `" + tablePrefix + "matches`;");
+             PreparedStatement sql = connection.prepareStatement("SELECT * FROM `rankedpvp_matches`;");
         ) {
             ResultSet resultSet = sql.executeQuery();
             GameInfo gameInfo = Game.defaultGameInfo();
@@ -244,7 +241,7 @@ public class DatabaseManager extends Manager {
     public void insertMatchResult (TwoTeamGameResult result){
         Bukkit.getScheduler().runTask(RankedPvP.getInstance(), () -> {
             try (Connection connection = getConnection();
-                 PreparedStatement sql = connection.prepareStatement("INSERT INTO `" + tablePrefix + "matches`(`team-one`, `team-two`, `winner-team`, `arena`, `event-type`, `datetime`, `team-one-pre-rating`, `team-two-pre-rating`, `team-one-post-rating`, `team-two-post-rating`, `team-one-pre-deviation`, `team-two-pre-deviation`, `team-one-post-deviation`, `team-two-post-deviation`, `quality`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);");
+                 PreparedStatement sql = connection.prepareStatement("INSERT INTO `rankedpvp_matches`(`team-one`, `team-two`, `winner-team`, `arena`, `event-type`, `datetime`, `team-one-pre-rating`, `team-two-pre-rating`, `team-one-post-rating`, `team-two-post-rating`, `team-one-pre-deviation`, `team-two-pre-deviation`, `team-one-post-deviation`, `team-two-post-deviation`, `quality`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);");
             ) {
                 sql.setInt(1, result.teamOne);
                 sql.setInt(2, result.teamTwo);
@@ -271,7 +268,7 @@ public class DatabaseManager extends Manager {
     public void updatePlayer (ArenaPlayer player){
         Bukkit.getScheduler().runTask(RankedPvP.getInstance(), () -> {
             try (Connection connection = getConnection();
-                 PreparedStatement sql = connection.prepareStatement("UPDATE " + tablePrefix + "players SET name=?,uuid=?,rating=?,deviation=?,visible_rating=? WHERE id=?;");
+                 PreparedStatement sql = connection.prepareStatement("UPDATE `rankedpvp_players` SET name=?,uuid=?,rating=?,deviation=?,visible_rating=? WHERE id=?;");
             ) {
                 sql.setString(1, player.getName());
                 sql.setString(2, player.getUuid().toString());

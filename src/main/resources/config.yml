@@ -13,7 +13,6 @@ mysql:
   url: jdbc:mysql://localhost:3306/database
   username: username
   password: 'password'
-  table-prefix: "rankedpvp_"
 
 # x,y,z,yaw,pitch,world
 spawn: "125,25,123,20.5,15.1,world"

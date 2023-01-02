@@ -129,7 +129,10 @@ public class TwoPlayerGame extends Game {
                     if (playerTwoPlayer != null)
                         playerTwoPlayer.playSound(playerTwoPlayer.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
 
-                    TextReplacementConfig replacement = TextReplacementConfig.builder().match("%TIME%").replacement(Utils.secondString(timeToStart / 4)).build();
+                    TextReplacementConfig replacement = TextReplacementConfig.builder()
+                            .match("%TIME%")
+                            .replacement(Utils.secondString(timeToStart / 4))
+                            .build();
                     Messages.BATTLE_STARTING_IN.sendTo(playerOne.getUuid(), replacement);
                     Messages.BATTLE_STARTING_IN.sendTo(playerTwo.getUuid(), replacement);
                 }
@@ -157,7 +160,10 @@ public class TwoPlayerGame extends Game {
             boolean firstInArena = arena.isInArena(playerOne);
             boolean secondInArena = arena.isInArena(playerTwo);
             if (timeRemaining % (5*4) == 0) {
-                TextReplacementConfig replacement = TextReplacementConfig.builder().match("%TIME%").replacement(Utils.secondString(oneTimeToReturn / 4)).build();
+                TextReplacementConfig replacement = TextReplacementConfig.builder()
+                        .match("%TIME%")
+                        .replacement(Utils.secondString(oneTimeToReturn / 4))
+                        .build();
                 if (timeRemaining != 0 && !firstInArena && secondInArena) {
                     Messages.OPPONENT_NOT_IN_ARENA.sendTo(playerTwo.getUuid(), replacement);
                 }
@@ -191,12 +197,18 @@ public class TwoPlayerGame extends Game {
 
             String timeVariable;
             if (timeRemaining % (60*4) == 0 && timeRemaining != 0) {
-                TextReplacementConfig replacement = TextReplacementConfig.builder().match("%TIME%").replacement(Utils.minutesString(timeRemaining / (60*4))).build();
+                TextReplacementConfig replacement = TextReplacementConfig.builder()
+                        .match("%TIME%")
+                        .replacement(Utils.minutesString(timeRemaining / (60*4)))
+                        .build();
                 Messages.TIME_REMAINING.sendTo(playerOne.getUuid(), replacement);
                 Messages.TIME_REMAINING.sendTo(playerTwo.getUuid(), replacement);
             }
             if (timeRemaining == 30*4) {
-                TextReplacementConfig replacement = TextReplacementConfig.builder().match("%TIME%").replacement(Utils.secondString(30)).build();
+                TextReplacementConfig replacement = TextReplacementConfig.builder()
+                        .match("%TIME%")
+                        .replacement(Utils.secondString(30))
+                        .build();
                 Messages.TIME_REMAINING.sendTo(playerOne.getUuid(), replacement);
                 Messages.TIME_REMAINING.sendTo(playerTwo.getUuid(), replacement);
             }

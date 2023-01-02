@@ -93,7 +93,9 @@ public class Placeholders extends PlaceholderExpansion {
         } else if (param.contains("player-rating-rank")) {
             int rank = Integer.parseInt(param.split("player-rating-rank")[1]);
             Optional<ArenaPlayer> arenaPlayer = plugin.players().getPlayerByRank(rank);
-            return arenaPlayer.map(player -> plugin.players().getPlayerRating(player.getRatingVisible(), player.getMatches())).orElse(Component.empty()).toString();
+            return arenaPlayer.map(player -> plugin.players()
+                    .getPlayerRating(player.getRatingVisible(), player.getMatches()))
+                    .orElse(Component.empty()).toString();
         } else if (param.contains("player-rating")) {
             if (offlinePlayer.getName() == null)
                 return "";

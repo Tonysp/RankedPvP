@@ -85,7 +85,13 @@ public abstract class Game {
     }
 
     public static GameInfo defaultGameInfo () {
-        return new GameInfo(EntityWithRating.DEFAULT_RATING, EntityWithRating.DEFAULT_DEVIATION, EntityWithRating.DEFAULT_RATING / 6.0, EntityWithRating.DEFAULT_RATING / 300.0, 0.03);
+        return new GameInfo(
+                EntityWithRating.DEFAULT_RATING,
+                EntityWithRating.DEFAULT_DEVIATION,
+                EntityWithRating.DEFAULT_RATING / 6.0,
+                EntityWithRating.DEFAULT_RATING / 300.0,
+                0.03
+        );
     }
 
     public List<ArenaPlayer> getPlayers () {

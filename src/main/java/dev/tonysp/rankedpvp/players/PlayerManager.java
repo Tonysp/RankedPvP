@@ -172,7 +172,8 @@ public class PlayerManager extends Manager {
 
         List<TextReplacementConfig> timeReplacement = new ArrayList<>();
         timeReplacement.add(TextReplacementConfig.builder().match("%TIME%")
-                .replacement(Utils.secondString(timeRemaining).append(Component.text(" ")).append(Utils.remainingString(timeRemaining))).build());
+                .replacement(Utils.secondString(timeRemaining).append(Component.text(" ")).append(Utils.remainingString(timeRemaining)))
+                .build());
         final TextComponent message = Messages.PREFIX.getMessage().append(
                 Messages.CLICK_TO_TELEPORT.getMessage(timeReplacement)
                         .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.RUN_COMMAND, "/pvp accept"))

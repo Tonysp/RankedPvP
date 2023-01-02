@@ -33,12 +33,10 @@ import de.gesundkrank.jskills.Team;
 import de.gesundkrank.jskills.trueskill.TwoPlayerTrueSkillCalculator;
 import dev.tonysp.rankedpvp.Messages;
 import dev.tonysp.rankedpvp.RankedPvP;
-import dev.tonysp.rankedpvp.Utils;
 import dev.tonysp.rankedpvp.game.EventType;
 import dev.tonysp.rankedpvp.game.Game;
 import dev.tonysp.rankedpvp.players.ArenaPlayer;
 import dev.tonysp.rankedpvp.players.EntityWithRating;
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.TextReplacementConfig;
 import org.bukkit.ChatColor;
@@ -122,7 +120,8 @@ public class PvPCommand implements CommandExecutor {
             sender.sendMessage(rankMessage);
             if (player.isPresent()) {
                 sender.sendMessage(ChatColor.YELLOW + "number of matches: " + ChatColor.GRAY + player.get().getMatches());
-                sender.sendMessage(ChatColor.YELLOW + "wins/loses/draws: " + ChatColor.GRAY + player.get().getWins() + "/" + player.get().getLosses() + "/" + player.get().getDraws());
+                String winsLosesDraws = player.get().getWins() + "/" + player.get().getLosses() + "/" + player.get().getDraws();
+                sender.sendMessage(ChatColor.YELLOW + "wins/loses/draws: " + ChatColor.GRAY + winsLosesDraws);
             } else {
                 sender.sendMessage(ChatColor.YELLOW + "number of matches: " + ChatColor.GRAY + "0");
                 sender.sendMessage(ChatColor.YELLOW + "wins/loses/draws: " + ChatColor.GRAY + "0/0/0");

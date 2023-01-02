@@ -125,7 +125,10 @@ public enum Messages {
 
         TextComponent finalMessage = PREFIX.getMessage().append(getMessage());
         for (String variable : variables) {
-            TextReplacementConfig replacement = TextReplacementConfig.builder().match(variable.split(":")[0]).replacement(variable.split(":")[1]).build();
+            TextReplacementConfig replacement = TextReplacementConfig.builder()
+                    .match(variable.split(":")[0])
+                    .replacement(variable.split(":")[1])
+                    .build();
             finalMessage = (TextComponent) finalMessage.replaceText(replacement);
         }
         RankedPvP.getInstance().players().sendMessageToPlayer(playerUuid, finalMessage, true);

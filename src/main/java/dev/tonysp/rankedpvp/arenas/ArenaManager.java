@@ -62,77 +62,80 @@ public class ArenaManager extends Manager {
         // Load arenas from config
         RankedPvP.log("Loading arenas:");
         ConfigurationSection arenasConfig = config.getConfigurationSection("arenas");
-        if (arenasConfig != null)
-            for (String arenaName : arenasConfig.getKeys(false)) {
-                RankedPvP.log("... loading arena " + arenaName);
-                ConfigurationSection arenaConfig = config.getConfigurationSection("arenas." + arenaName);
-                if (arenaConfig == null) {
-                    RankedPvP.logWarning("error while loading arena: invalid arena config");
-                    continue;
-                }
-                String eventTypeString = arenaConfig.getString("event-type", "");
-                Optional<EventType> eventType = EventType.fromString(eventTypeString);
-                if (eventType.isEmpty()) {
-                    RankedPvP.logWarning("error while loading arena: invalid event type");
-                    continue;
-                }
-
-                String name = arenaConfig.getString("name");
-
-                boolean isRanked = arenaConfig.getBoolean("ranked", false);
-
-                String regionName = arenaConfig.getString("region", "");
-
-                if (regionName.isEmpty()) {
-                    RankedPvP.logWarning("error while loading arena: WorldGuard region name must be specified");
-                    return false;
-                }
-
-                List<String> teamOneWarpsStrings = arenaConfig.getStringList("team-one-warps");
-                List<Warp> teamOneWarps = loadWarps(teamOneWarpsStrings);
-                if (teamOneWarps.isEmpty()) {
-                    RankedPvP.logWarning("error while loading arena: no team-one warps loaded");
-                    continue;
-                }
-
-                List<String> teamTwoWarpsStrings = arenaConfig.getStringList("team-two-warps");
-                List<Warp> teamTwoWarps = loadWarps(teamTwoWarpsStrings);
-                if (teamTwoWarps.isEmpty()) {
-                    RankedPvP.logWarning("error while loading arena: no team-two warps loaded");
-                    continue;
-                }
-
-                boolean error = false;
-                HashMap<Location, Material> lobbyDoorBlocks = new HashMap<>();
-                for (String doorBlockString : arenaConfig.getStringList("lobby-door-blocks")) {
-                    String[] blockData = doorBlockString.split(",");
-                    int x = Integer.parseInt(blockData[0]);
-                    int y = Integer.parseInt(blockData[1]);
-                    int z = Integer.parseInt(blockData[2]);
-                    World world = Bukkit.getWorld(blockData[3]);
-                    if (world == null) {
-                        error = true;
-                        RankedPvP.logWarning("error while loading arena: invalid world " + blockData[3]);
-                        break;
-                    }
-                    Material material = Material.valueOf(blockData[4].toUpperCase());
-
-                    Location location = new Location(world, x, y, z);
-                    lobbyDoorBlocks.put(location, material);
-                }
-
-                if (error)
-                    continue;
-
-                Arena arena = new Arena(name, eventType.get(), teamOneWarps, teamTwoWarps, regionName, isRanked);
-                if (!arena.teamOneWarps.stream().allMatch(warp -> arena.isLocationInArena(warp.location))
-                        || !arena.teamTwoWarps.stream().allMatch(warp -> arena.isLocationInArena(warp.location))) {
-                    RankedPvP.logWarning("error while loading arena: warps must be inside the arena region");
-                    continue;
-                }
-                arena.lobbyDoorBlocks = lobbyDoorBlocks;
-                arenas.add(arena);
+        if (arenasConfig == null) {
+            return false;
+        }
+        for (String arenaName : arenasConfig.getKeys(false)) {
+            RankedPvP.log("... loading arena " + arenaName);
+            ConfigurationSection arenaConfig = config.getConfigurationSection("arenas." + arenaName);
+            if (arenaConfig == null) {
+                RankedPvP.logWarning("error while loading arena: invalid arena config");
+                continue;
             }
+            String eventTypeString = arenaConfig.getString("event-type", "");
+            Optional<EventType> eventType = EventType.fromString(eventTypeString);
+            if (eventType.isEmpty()) {
+                RankedPvP.logWarning("error while loading arena: invalid event type");
+                continue;
+            }
+
+            String name = arenaConfig.getString("name");
+
+            boolean isRanked = arenaConfig.getBoolean("ranked", false);
+
+            String regionName = arenaConfig.getString("region", "");
+
+            if (regionName.isEmpty()) {
+                RankedPvP.logWarning("error while loading arena: WorldGuard region name must be specified");
+                return false;
+            }
+
+            List<String> teamOneWarpsStrings = arenaConfig.getStringList("team-one-warps");
+            List<Warp> teamOneWarps = loadWarps(teamOneWarpsStrings);
+            if (teamOneWarps.isEmpty()) {
+                RankedPvP.logWarning("error while loading arena: no team-one warps loaded");
+                continue;
+            }
+
+            List<String> teamTwoWarpsStrings = arenaConfig.getStringList("team-two-warps");
+            List<Warp> teamTwoWarps = loadWarps(teamTwoWarpsStrings);
+            if (teamTwoWarps.isEmpty()) {
+                RankedPvP.logWarning("error while loading arena: no team-two warps loaded");
+                continue;
+            }
+
+            boolean error = false;
+            HashMap<Location, Material> lobbyDoorBlocks = new HashMap<>();
+            for (String doorBlockString : arenaConfig.getStringList("lobby-door-blocks")) {
+                String[] blockData = doorBlockString.split(",");
+                int x = Integer.parseInt(blockData[0]);
+                int y = Integer.parseInt(blockData[1]);
+                int z = Integer.parseInt(blockData[2]);
+                World world = Bukkit.getWorld(blockData[3]);
+                if (world == null) {
+                    error = true;
+                    RankedPvP.logWarning("error while loading arena: invalid world " + blockData[3]);
+                    break;
+                }
+                Material material = Material.valueOf(blockData[4].toUpperCase());
+
+                Location location = new Location(world, x, y, z);
+                lobbyDoorBlocks.put(location, material);
+            }
+
+            if (error)
+                continue;
+
+            Arena arena = new Arena(name, eventType.get(), teamOneWarps, teamTwoWarps, regionName, isRanked);
+            if (!arena.teamOneWarps.stream().allMatch(warp -> arena.isLocationInArena(warp.location))
+                    || !arena.teamTwoWarps.stream().allMatch(warp -> arena.isLocationInArena(warp.location))) {
+                RankedPvP.logWarning("error while loading arena: warps must be inside the arena region");
+                continue;
+            }
+            arena.lobbyDoorBlocks = lobbyDoorBlocks;
+            arenas.add(arena);
+        }
+
 
         return true;
     }
